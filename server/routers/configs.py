@@ -18,7 +18,9 @@ def _check_data_source_enabled(ds: str):
         raise HTTPException(400, "零零信安 数据源未启用")
     if ds == "zoomeye" and get_setting("zoomeye_enabled", "0") != "1":
         raise HTTPException(400, "ZoomEye 数据源未启用")
-    if ds not in ("github", "ozone", "zoomeye"):
+    if ds == "daydaymap" and get_setting("daydaymap_enabled", "0") != "1":
+        raise HTTPException(400, "DayDayMap 数据源未启用")
+    if ds not in ("github", "ozone", "zoomeye", "daydaymap"):
         raise HTTPException(400, f"不支持的数据源: {ds}")
 
 @router.get("/configs")
