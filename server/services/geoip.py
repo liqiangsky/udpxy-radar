@@ -27,7 +27,9 @@ async def query_geoip(session: aiohttp.ClientSession, ip: str) -> dict:
 
 
 async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) -> list[dict]:
-    """批量富化 geo 信息：对缺少 geoRegion/geoOperator 的 host 条目进行 geoip 查询"""
+    """批量富化 geo 信息：对缺少 geoRegion/geoOperator 的 host 条目进行 geoip 查询
+    保留原始字段（如 delay、protocol 等），只追加 geo 信息
+    """
     enriched = []
     for item in sources:
         host = item.get("host", "")
@@ -38,7 +40,7 @@ async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) 
             operator_val = geo.get("operator", "")
             logger.info(f"🌍 [geoip] {host} -> region={region_val!r}, operator={operator_val!r}")
             enriched.append({
-                "host": host,
+                **item,
                 "geoRegion": region_val,
                 "geoOperator": operator_val
             })
