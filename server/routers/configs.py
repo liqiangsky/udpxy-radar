@@ -162,6 +162,25 @@ async def api_manual_zoomeye_fetch():
     return {"ok": True, "message": "已触发，等待 Action 回调推送"}
 
 
+@router.post("/daydaymap/fetch")
+async def api_manual_daydaymap_fetch():
+    """
+    手动触发 DayDayMap 数据拉取
+    """
+    from services.daydaymap import fetch_daydaymap_sources
+    from services.source_cache import cache_sources
+
+    sources = await fetch_daydaymap_sources()
+    if sources:
+        cache_sources("daydaymap", sources)
+
+    return {
+        "ok": True,
+        "fetched": len(sources),
+        "hosts": [s["host"] for s in sources]
+    }
+
+
 @router.post("/source/push")
 async def api_source_push(request: Request):
     """

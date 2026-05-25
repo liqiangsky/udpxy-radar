@@ -158,7 +158,7 @@ const fetchTemplates = async () => {
 }
 
 const dataSourceLabel = (ds) => {
-  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye' }
+  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye', daydaymap: 'DayDayMap' }
   return map[ds] || ds || '-'
 }
 
@@ -169,11 +169,13 @@ const enabledDataSources = computed(() => {
   if (!s) return [
     { value: 'github', label: 'GitHub 代码检索' },
     { value: 'ozone', label: '零零信安 空间测绘' },
-    { value: 'zoomeye', label: 'ZoomEye 空间测绘' }
+    { value: 'zoomeye', label: 'ZoomEye 空间测绘' },
+    { value: 'daydaymap', label: 'DayDayMap 空间测绘' }
   ]
   if (s.github?.enabled !== false) sources.push({ value: 'github', label: 'GitHub 代码检索' })
   if (s.ozone?.enabled !== false) sources.push({ value: 'ozone', label: '零零信安 空间测绘' })
   if (s.zoomeye?.enabled !== false) sources.push({ value: 'zoomeye', label: 'ZoomEye 空间测绘' })
+  if (s.daydaymap?.enabled !== false) sources.push({ value: 'daydaymap', label: 'DayDayMap 空间测绘' })
   return sources
 })
 

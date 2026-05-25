@@ -16,6 +16,9 @@ class GlobalSettingsUpdate(BaseModel):
     zoomeyeEnabled: bool = True
     zoomeyeFetchCron: str = ""
     zoomeyeScanCron: str = ""
+    daydaymapEnabled: bool = True
+    daydaymapFetchCron: str = ""
+    daydaymapScanCron: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

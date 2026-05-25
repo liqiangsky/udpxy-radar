@@ -332,6 +332,8 @@ class ActiveSourceJanitor:
         last_zoomeye_fetch_exec = ""
         last_ozone_scan_exec = ""
         last_zoomeye_scan_exec = ""
+        last_daydaymap_fetch_exec = ""
+        last_daydaymap_scan_exec = ""
 
         # HF 自动同步定时器（每分钟一次）
         last_hf_sync = time.time()
@@ -551,6 +553,36 @@ class ActiveSourceJanitor:
                             trigger_background_queue([r["id"] for r in rows])
                         else:
                             logger.info("📡 [ZoomEye] 无启用的 zoomeye 扫描配置")
+
+                # DayDayMap 定时拉取
+                daydaymap_fetch_cron = get_setting("daydaymap_fetch_cron", "")
+                if daydaymap_fetch_cron and cron_match(daydaymap_fetch_cron, cron_now):
+                    exec_key = now.strftime("%Y-%m-%d %H:%M")
+                    if exec_key != last_daydaymap_fetch_exec and task_runner.is_idle():
+                        last_daydaymap_fetch_exec = exec_key
+                        logger.info(f"⏰ [Cron触发] DayDayMap 定时拉取 -> cron: {daydaymap_fetch_cron}")
+                        async def _fetch_daydaymap():
+                            from services.daydaymap import fetch_daydaymap_sources
+                            sources = await fetch_daydaymap_sources()
+                            if sources:
+                                cache_sources("daydaymap", sources)
+                        asyncio.run(_fetch_daydaymap())
+
+                # DayDayMap 定时扫描
+                daydaymap_scan_cron = get_setting("daydaymap_scan_cron", "")
+                if daydaymap_scan_cron and cron_match(daydaymap_scan_cron, cron_now):
+                    exec_key = now.strftime("%Y-%m-%d %H:%M")
+                    if exec_key != last_daydaymap_scan_exec and task_runner.is_idle():
+                        last_daydaymap_scan_exec = exec_key
+                        logger.info(f"⏰ [Cron触发] DayDayMap 定时扫描 -> cron: {daydaymap_scan_cron}")
+                        with get_db() as conn:
+                            rows = conn.execute(
+                                "SELECT id FROM scan_config WHERE dataSource='daydaymap' AND enabled=1"
+                            ).fetchall()
+                        if rows:
+                            trigger_background_queue([r["id"] for r in rows])
+                        else:
+                            logger.info("📡 [DayDayMap] 无启用的 daydaymap 扫描配置")
 
             except Exception as e:
                 logger.error(f"❌ [复测异常] 老化器心跳内爆: {e}")
