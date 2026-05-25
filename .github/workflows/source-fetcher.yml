@@ -1,0 +1,38 @@
+name: Source Data Fetcher
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: '数据源 URL（完整地址）'
+        required: true
+      source_type:
+        description: '数据源类型：zoomeye / ozone / custom'
+        required: true
+        default: 'zoomeye'
+      callback_url:
+        description: 'HF Spaces 回调地址（POST 推送接口）'
+        required: true
+      callback_token:
+        description: '回调认证 token（可选）'
+        required: false
+
+jobs:
+  fetch-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install playwright aiohttp
+          playwright install chromium
+      - name: Fetch Source Data & Push to HF
+        env:
+          SOURCE_URL: ${{ github.event.inputs.source_url }}
+          SOURCE_TYPE: ${{ github.event.inputs.source_type }}
+          CALLBACK_URL: ${{ github.event.inputs.callback_url }}
+          CALLBACK_TOKEN: ${{ github.event.inputs.callback_token }}
+        run: python .github/scripts/fetch_source_data.py
