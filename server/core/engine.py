@@ -12,7 +12,7 @@ from services.github import search_github_sources
 from services.ozone import fetch_ozone_sources
 from services.source_cache import get_cached_hosts, cache_sources
 from services.validator import verify_single_host
-from services.geoip import query_geoip
+from services.geoip import enrich_geo_batch
 from services.hf_sync import push_to_hf
 
 logger = logging.getLogger("udpxy_radar")
@@ -114,6 +114,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
 
                     valid_count = 0
                     _valid_lock = threading.Lock()
+                    _valid_hosts = []  # 收集验证通过的 host
 
                     sem = asyncio.Semaphore(run_concurrency)
 
@@ -148,127 +149,13 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                 if not res:
                                     return
 
-                                #
-                                # host 解析
-                                #
-                                if ":" in host_item:
-                                    ip_val, port_val = host_item.rsplit(":", 1)
-                                else:
-                                    ip_val, port_val = host_item, 80
-
-                                #
-                                # GEOIP 查询
-                                #
-                                try:
-                                    geo_info = await query_geoip(
-                                        session,
-                                        ip_val
-                                    )
-                                except Exception:
-                                    geo_info = {}
-
-                                geo_region = geo_info.get("region", "")
-                                geo_operator = geo_info.get("operator", "")
-
-                                now_stamp = int(time.time() * 1000)
-
-                                # 写锁保护：防止并发 worker 同时写 SQLite
-                                _db_write_lock.acquire()
-                                try:
-                                    with get_db() as conn:
-                                        conn.execute("""
-                                            INSERT INTO iptv_list (
-                                                host,
-                                                ip,
-                                                port,
-
-                                                sourceType,
-                                                sourceName,
-
-                                                region,
-                                                operator,
-
-                                                geoRegion,
-                                                geoOperator,
-
-                                                delay,
-                                                protocol,
-
-                                                target,
-                                                channelName,
-
-                                                createTime,
-                                                updateTime
-                                            )
-                                            VALUES (
-                                                ?, ?, ?,
-                                                ?, ?,
-                                                ?, ?,
-                                                ?, ?,
-                                                ?, ?,
-                                                ?, ?,
-                                                ?, ?
-                                            )
-
-                                            ON CONFLICT(host, target, channelName)
-                                            DO UPDATE SET
-
-                                                delay = excluded.delay,
-                                                updateTime = excluded.updateTime,
-
-                                                geoRegion = excluded.geoRegion,
-                                                geoOperator = excluded.geoOperator
-                                        """, (
-
-                                            #
-                                            # HOST
-                                            #
-                                            host_item,
-                                            ip_val,
-                                            int(port_val),
-
-                                            #
-                                            # 来源
-                                            #
-                                            source_type,
-                                            source_name,
-
-                                            #
-                                            # 业务归属
-                                            #
-                                            config.get("templateRegion", ""),
-                                            config.get("templateOperator", ""),
-
-                                            #
-                                            # GEOIP
-                                            #
-                                            geo_region,
-                                            geo_operator,
-
-                                            #
-                                            # 播放信息
-                                            #
-                                            res["delay"],
-                                            res["protocol"],
-
-                                            #
-                                            # 频道
-                                            #
-                                            config["templateTargetAddress"],
-                                            config["templateTargetName"],
-
-                                            #
-                                            # 时间
-                                            #
-                                            now_stamp,
-                                            now_stamp
-                                        ))
-                                finally:
-                                    _db_write_lock.release()
-
+                                # 收集验证通过的结果
                                 with _valid_lock:
-                                    nonlocal valid_count
-                                    valid_count += 1
+                                    _valid_hosts.append({
+                                        "host": host_item,
+                                        "delay": res["delay"],
+                                        "protocol": res["protocol"]
+                                    })
 
                             except Exception as e:
                                 logger.error(f"❌ [验证异常] {host_item} -> {e}")
@@ -278,6 +165,57 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     await asyncio.gather(
                         *(worker(h) for h in candidate_hosts)
                     )
+
+                    if _valid_hosts:
+                        # 统一 geoip 富化
+                        enriched = await enrich_geo_batch(session, _valid_hosts)
+
+                        now_stamp = int(time.time() * 1000)
+
+                        # 入 iptv_list 活源池
+                        _db_write_lock.acquire()
+                        try:
+                            with get_db() as conn:
+                                for item in enriched:
+                                    host_item = item["host"]
+                                    if ":" in host_item:
+                                        ip_val, port_val = host_item.rsplit(":", 1)
+                                    else:
+                                        ip_val, port_val = host_item, 80
+
+                                    conn.execute("""
+                                        INSERT INTO iptv_list (
+                                            host, ip, port,
+                                            sourceType, sourceName,
+                                            region, operator,
+                                            geoRegion, geoOperator,
+                                            delay, protocol,
+                                            target, channelName,
+                                            createTime, updateTime
+                                        ) VALUES (
+                                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                                        )
+                                        ON CONFLICT(host, target, channelName)
+                                        DO UPDATE SET
+                                            delay = excluded.delay,
+                                            updateTime = excluded.updateTime,
+                                            geoRegion = excluded.geoRegion,
+                                            geoOperator = excluded.geoOperator
+                                    """, (
+                                        host_item, ip_val, int(port_val),
+                                        source_type, source_name,
+                                        config.get("templateRegion", ""),
+                                        config.get("templateOperator", ""),
+                                        item["geoRegion"], item["geoOperator"],
+                                        item["delay"], item["protocol"],
+                                        config["templateTargetAddress"],
+                                        config["templateTargetName"],
+                                        now_stamp, now_stamp
+                                    ))
+                        finally:
+                            _db_write_lock.release()
+
+                        valid_count = len(enriched)
 
                     logger.info(f"✅ [扫描完成] {config['name']} -> {valid_count}/{len(candidate_hosts)} 个有效")
                     total_valid += valid_count

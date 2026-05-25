@@ -167,8 +167,11 @@ async def api_source_push(request: Request):
     """
     GitHub Action 完成数据拉取后，推送清洗后的 host 列表到此接口
     支持任意数据源类型（zoomeye / ozone / custom）
+    自动对缺少 geo 信息的 host 进行 geoip 富化
     """
+    import aiohttp
     from services.source_cache import cache_sources
+    from services.geoip import enrich_geo_batch
 
     token = request.headers.get("X-Callback-Token", "")
     expected_token = get_setting("callback_token", "")
@@ -181,14 +184,20 @@ async def api_source_push(request: Request):
 
     logger.info(f"📥 [数据源推送] sourceType={source_type}, hosts={len(hosts)}")
 
+    # geoip 富化
+    async with aiohttp.ClientSession() as session:
+        enriched = await enrich_geo_batch(session, hosts)
+
+    logger.info(f"📄 [{source_type}] 推送 {len(enriched)} 条数据，已写入 source_cache")
+
     # 去重后入库
-    cache_sources(source_type, hosts)
+    cache_sources(source_type, enriched)
 
     return {
         "ok": True,
         "sourceType": source_type,
-        "fetched": len(hosts),
-        "hosts": [h["host"] for h in hosts]
+        "fetched": len(enriched),
+        "hosts": [h["host"] for h in enriched]
     }
 
 

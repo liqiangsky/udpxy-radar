@@ -24,3 +24,24 @@ async def query_geoip(session: aiohttp.ClientSession, ip: str) -> dict:
     except Exception as e:
         logger.debug(f"🌍 [geoip] {ip} 异常: {e}")
         return {"region": "", "operator": ""}
+
+
+async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) -> list[dict]:
+    """批量富化 geo 信息：对缺少 geoRegion/geoOperator 的 host 条目进行 geoip 查询"""
+    enriched = []
+    for item in sources:
+        host = item.get("host", "")
+        if not item.get("geoRegion") and not item.get("geoOperator"):
+            ip_part = host.rsplit(":", 1)[0] if ":" in host else host
+            geo = await query_geoip(session, ip_part)
+            region_val = geo.get("region", "")
+            operator_val = geo.get("operator", "")
+            logger.info(f"🌍 [geoip] {host} -> region={region_val!r}, operator={operator_val!r}")
+            enriched.append({
+                "host": host,
+                "geoRegion": region_val,
+                "geoOperator": operator_val
+            })
+        else:
+            enriched.append(item)
+    return enriched

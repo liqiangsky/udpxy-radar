@@ -5,7 +5,7 @@ import random
 import logging
 from typing import List
 from db.database import get_db, get_setting
-from services.geoip import query_geoip
+from services.geoip import enrich_geo_batch
 
 logger = logging.getLogger("udpxy_radar")
 
@@ -71,7 +71,7 @@ async def fetch_ozone_sources(page: int = 1) -> List[dict]:
                 return []
 
             data_list = result.get("data", {}).get("data_list", [])
-            sources = []
+            raw_sources = []
 
             for item in data_list:
                 src = item.get("_source", {})
@@ -79,7 +79,7 @@ async def fetch_ozone_sources(page: int = 1) -> List[dict]:
                 if not redirect_url:
                     continue
 
-                # 从 redirect_url 解析 host（可能是 IP 或域名）
+                # 从 redirect_url 解析 host
                 try:
                     parsed = urlparse(redirect_url)
                     hostname = parsed.hostname
@@ -89,27 +89,12 @@ async def fetch_ozone_sources(page: int = 1) -> List[dict]:
                 except Exception:
                     continue
 
-                host = f"{hostname}:{port}"
+                raw_sources.append({"host": f"{hostname}:{port}"})
 
-                # geoip 查询（IP 和域名都支持）
-                try:
-                    geo_info = await query_geoip(session, hostname)
-                except Exception:
-                    geo_info = {"region": "", "operator": ""}
-
-                region_val = geo_info.get("region", "")
-                operator_val = geo_info.get("operator", "")
-
-                logger.info(f"🌍 [geoip] {host} -> region={region_val!r}, operator={operator_val!r}")
-
-                sources.append({
-                    "host": host,
-                    "geoRegion": region_val,
-                    "geoOperator": operator_val
-                })
-
-            logger.info(f"📄 [0.zone] 第 {page} 页 -> {len(sources)} 条数据")
-            return sources
+            # 统一 geoip 富化
+            enriched = await enrich_geo_batch(session, raw_sources)
+            logger.info(f"📄 [0.zone] 第 {page} 页 -> {len(enriched)} 条数据")
+            return enriched
 
     except Exception as e:
         logger.error(f"❌ [0.zone] 请求异常: {e}")
