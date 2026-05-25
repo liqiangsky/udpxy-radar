@@ -84,7 +84,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                 # 根据 dataSource 路由
                 data_source = config.get("dataSource", "github")
                 source_type = data_source
-                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye"}
+                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap"}
                 source_name = source_name_map.get(data_source, data_source)
 
                 if data_source == "ozone":
@@ -95,6 +95,10 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     region = config.get("templateRegion", "")
                     candidate_hosts = get_cached_hosts("zoomeye", region)
                     logger.info(f"📡 [zoomeye] 从 source_cache 读取, region='{region}', 匹配到 {len(candidate_hosts)} 个 host")
+                elif data_source == "daydaymap":
+                    region = config.get("templateRegion", "")
+                    candidate_hosts = get_cached_hosts("daydaymap", region)
+                    logger.info(f"📡 [daydaymap] 从 source_cache 读取, region='{region}', 匹配到 {len(candidate_hosts)} 个 host")
                 else:
                     # GitHub 实时搜索
                     candidate_hosts = await search_github_sources(
