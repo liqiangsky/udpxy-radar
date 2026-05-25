@@ -4,7 +4,7 @@ import logging
 from db.database import DB_PATH
 from pathlib import Path
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 HF_DATASET_ID = os.getenv("HF_DATASET_ID", "")
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 

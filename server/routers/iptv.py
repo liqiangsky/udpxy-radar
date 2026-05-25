@@ -7,7 +7,7 @@ from datetime import datetime
 
 from db.database import get_db
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 router = APIRouter()
 
 
@@ -255,7 +255,7 @@ async def api_test_delay(source_id: int):
             async with session.get(
                 test_url,
                 timeout=aiohttp.ClientTimeout(total=timeout_sec),
-                headers={"User-Agent": "CastScout/3.0"}
+                headers={"User-Agent": "udpxy-radar/1.0"}
             ) as r:
                 if r.status in [200, 206] and await r.content.read(512):
                     delay = int((time.time() - start_t) * 1000)

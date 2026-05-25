@@ -7,7 +7,7 @@ import logging
 from typing import List
 from db.database import get_db
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 
 def cache_sources(source_type: str, sources: List[dict]):

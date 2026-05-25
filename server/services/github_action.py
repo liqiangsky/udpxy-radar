@@ -7,7 +7,7 @@ import os
 import logging
 import aiohttp
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 GITHUB_API = "https://api.github.com"
 WORKFLOW_FILE = "source-fetcher.yml"

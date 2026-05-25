@@ -7,7 +7,7 @@ from core.engine import trigger_background_queue, enqueue_background_queue
 import asyncio
 import aiohttp
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 router = APIRouter()
 
 

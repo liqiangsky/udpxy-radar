@@ -33,7 +33,7 @@ async def system_lifespan(app: FastAPI):
     janitor.stop()
     push_to_hf()
 
-app = FastAPI(title="CastScout V3", lifespan=system_lifespan)
+app = FastAPI(title="udpxy-radar", lifespan=system_lifespan)
 
 # 跨域设置
 app.add_middleware(

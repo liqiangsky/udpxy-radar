@@ -1,7 +1,7 @@
 import aiohttp
 import logging
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 async def query_geoip(session: aiohttp.ClientSession, ip: str) -> dict:
     url = f"http://ip-api.com/json/{ip}?lang=zh-CN"

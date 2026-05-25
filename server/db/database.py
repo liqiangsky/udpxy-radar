@@ -2,7 +2,7 @@ import sqlite3
 import os
 from contextlib import contextmanager
 
-DB_PATH = os.getenv("DB_PATH", "castscout_v3.db")
+DB_PATH = os.getenv("DB_PATH", "udpxy_radar.db")
 
 
 def init_db():
@@ -142,7 +142,7 @@ def init_db():
         import hashlib
 
         default_hash = hashlib.sha256(
-            os.getenv("CASTSCOUT_PASSWORD", "admin").encode()
+            os.getenv("UDPXY_RADAR_PASSWORD", "admin").encode()
         ).hexdigest()
 
         conn.execute(

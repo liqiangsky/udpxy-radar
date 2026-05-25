@@ -7,7 +7,7 @@ from typing import List
 from db.database import get_db, get_setting
 from services.geoip import query_geoip
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 OZONE_API_URL = "https://0.zone/api/home/search/"
 OZONE_QUERY = "udpxy multicast UDP-to-HTTP"

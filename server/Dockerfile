@@ -42,7 +42,7 @@ RUN mkdir -p /app/data && chmod -R 777 /app
 # 1. 强制 Python 将日志实时打印，防止在 Hugging Face 的 Logs 里面被缓存堵塞
 ENV PYTHONUNBUFFERED=1
 # 2. 将数据库路径重定向至具备可写权限的目录
-ENV DB_PATH=/app/data/castscout_v3.db
+ENV DB_PATH=/app/data/udpxy_radar.db
 # 3. 默认监听端口
 ENV PORT=7860
 

@@ -15,7 +15,7 @@ from services.validator import verify_single_host
 from services.geoip import query_geoip
 from services.hf_sync import push_to_hf
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 # SQLite 写锁：序列化所有并发写入，防止 database is locked
 _db_write_lock = threading.Lock()

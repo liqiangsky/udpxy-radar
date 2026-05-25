@@ -5,7 +5,7 @@ import asyncio
 from typing import List, Optional
 from db.database import get_setting
 
-logger = logging.getLogger("CastScout_V3")
+logger = logging.getLogger("udpxy_radar")
 
 async def search_github_sources(session: aiohttp.ClientSession, target_addr: str, config_max_pages: Optional[int], should_stop_func) -> List[str]:
     multicast_heads = set()
@@ -14,7 +14,7 @@ async def search_github_sources(session: aiohttp.ClientSession, target_addr: str
     token = get_setting("github_token", "")
     max_pages = config_max_pages if config_max_pages and config_max_pages > 0 else 5
 
-    headers = {"Accept": "application/vnd.github.v3+json", "User-Agent": "CastScout/3.0"}
+    headers = {"Accept": "application/vnd.github.v3+json", "User-Agent": "udpxy-radar/1.0"}
     if token:
         headers["Authorization"] = f"token {token}"
         logger.info(f"🔑 [Token] 已加载，最大挖掘深度: {max_pages} 页")
