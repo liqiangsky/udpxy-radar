@@ -38,20 +38,6 @@
         </div>
 
         <div class="form-group">
-          <label>GitHub 搜索深度 (页数)</label>
-          <div class="input-with-unit">
-            <input
-              v-model.number="settings.github.searchDepth"
-              type="number"
-              min="1"
-              max="30"
-            />
-            <span class="unit-text">页</span>
-          </div>
-          <p class="field-desc">每次执行检索爬取的最大结果页数限制。</p>
-        </div>
-
-        <div class="form-group">
           <label>定时扫描 (Cron)</label>
           <input
             v-model="settings.github.scanCron"
@@ -281,7 +267,7 @@ const handleManualFetch = async () => {
 }
 
 const settings = reactive({
-  github: { enabled: true, token: '', searchDepth: 5, scanCron: '' },
+  github: { enabled: true, token: '', scanCron: '' },
   ozone: { enabled: false, fetchCron: '', scanCron: '' },
   zoomeye: { enabled: false, fetchCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
@@ -325,7 +311,6 @@ const handleSave = async () => {
     const payload = {
       githubEnabled: settings.github.enabled,
       githubToken: settings.github.token,
-      githubSearchDepth: settings.github.searchDepth,
       githubScanCron: settings.github.scanCron,
       ozoneEnabled: settings.ozone.enabled,
       ozoneFetchCron: settings.ozone.fetchCron,

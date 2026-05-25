@@ -156,7 +156,6 @@ def init_db():
     default_settings = {
         "github_enabled": "1",
         "github_token": "",
-        "github_search_depth": "5",
         "github_scan_cron": "",
         "ozone_enabled": "0",
         "ozone_fetch_cron": "",

@@ -10,7 +10,6 @@ def api_get_settings():
         "github": {
             "enabled": get_setting("github_enabled", "1") == "1",
             "token": get_setting("github_token", ""),
-            "searchDepth": int(get_setting("github_search_depth", "5")),
             "scanCron": get_setting("github_scan_cron", "")
         },
         "ozone": {
@@ -37,7 +36,6 @@ def api_update_settings(data: GlobalSettingsUpdate):
     with get_db() as conn:
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_enabled', ?)", ("1" if data.githubEnabled else "0",))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_token', ?)", (data.githubToken,))
-        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_search_depth', ?)", (str(data.githubSearchDepth),))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_scan_cron', ?)", (data.githubScanCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('ozone_enabled', ?)", ("1" if data.ozoneEnabled else "0",))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('ozone_fetch_cron', ?)", (data.ozoneFetchCron,))

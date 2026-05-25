@@ -105,14 +105,6 @@
             </select>
           </div>
 
-          <div class="form-item" v-show="formData.dataSource === 'github'">
-            <label>GitHub 搜索深度 (页数)</label>
-            <div class="input-with-unit">
-              <input type="number" v-model="formData.searchDepth" min="1" max="30" />
-              <span class="unit-text">页</span>
-            </div>
-          </div>
-
           <div class="form-buttons">
             <button type="button" class="action-btn cancel-btn" @click="closeForm">取消</button>
             <button type="submit" class="action-btn primary-btn-submit">保存配置</button>
@@ -184,14 +176,10 @@ const formState = reactive({
   currentId: null
 })
 
-// 从全局设置获取 searchDepth 默认值
-let globalSearchDepth = 5
-
 const getDefaultFormData = () => ({
   name: '',
   templateId: '',
   dataSource: 'github',
-  searchDepth: globalSearchDepth,
   enabled: true
 })
 
@@ -231,7 +219,6 @@ const openForm = (editTarget = null) => {
       name: editTarget.name,
       templateId: editTarget.templateId,
       dataSource: editTarget.dataSource,
-      searchDepth: editTarget.searchDepth,
       enabled: editTarget.enabled
     })
   } else {
@@ -250,7 +237,6 @@ const handleSubmit = async () => {
   if (!formData.name?.trim()) { toast.error('配置名称不能为空'); return }
   if (!formData.dataSource) { toast.error('请选择数据源'); return }
   if (!formData.templateId) { toast.error('请选择配置模板'); return }
-  if (formData.dataSource === 'github' && (!formData.searchDepth || formData.searchDepth < 1 || formData.searchDepth > 30)) { toast.error('GitHub 搜索深度必须在 1-30 之间'); return }
 
   try {
     if (formState.isEdit) {
@@ -280,8 +266,7 @@ const handleDelete = async (id) => {
 }
 
 onMounted(async () => {
-  const settings = await settingsStore.fetch()
-  globalSearchDepth = settings.github?.searchDepth || 5
+  await settingsStore.fetch()
 
   await scanConfigStore.startPolling()
   await scanConfigStore.fetch()

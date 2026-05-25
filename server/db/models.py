@@ -4,7 +4,6 @@ from typing import Optional
 class GlobalSettingsUpdate(BaseModel):
     githubEnabled: bool = True
     githubToken: str = ""
-    githubSearchDepth: int = Field(5, ge=1, le=30)
     githubScanCron: str = ""
     ozoneEnabled: bool = True
     ozoneFetchCron: str = ""
