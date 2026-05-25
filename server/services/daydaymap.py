@@ -13,11 +13,13 @@ DAYDAYMAP_API_URL = "https://www.daydaymap.com/api/v1/raymap/search/asset/query"
 DAYDAYMAP_KEYWORD = base64.b64encode('product="Udpxy Web Module"'.encode()).decode()
 
 
-async def fetch_daydaymap_sources(page_size: int = 10) -> List[dict]:
+async def fetch_daydaymap_sources() -> List[dict]:
     """
-    请求 DayDayMap API 拉取 udpxy 设备数据（未登录只能查看第一页），
-    解析 ip+port 为 host，geo 信息优先使用 API 返回的 province/asn_org。
+    请求 DayDayMap API 拉取 udpxy 设备数据（未登录只能查看第一页，固定10条），
+    解析 ip+port 为 host，geo 信息全部走 geoip 查询。
     """
+    page = 1
+    page_size = 10
     logger.info(f"📡 [DayDayMap] 拉取第 1 页...")
 
     payload = {
@@ -34,7 +36,7 @@ async def fetch_daydaymap_sources(page_size: int = 10) -> List[dict]:
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json",
         "Origin": "https://www.daydaymap.com",
-        "Referer": f"https://www.daydaymap.com/searchResult?page={page}&pageSize={page_size}&value=&rawValue=&assetType=&assetTag=&scanTime=&dataFilter=&showType=card&keyword={DAYDAYMAP_KEYWORD}",
+        "Referer": f"https://www.daydaymap.com/searchResult?page=1&pageSize={page_size}&value=&rawValue=&assetType=&assetTag=&scanTime=&dataFilter=&showType=card&keyword={DAYDAYMAP_KEYWORD}",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
 
@@ -69,7 +71,7 @@ async def fetch_daydaymap_sources(page_size: int = 10) -> List[dict]:
             enriched = await enrich_geo_batch(session, raw_sources)
 
             total = result.get("data", {}).get("total", 0)
-            logger.info(f"📄 [DayDayMap] 第 {page} 页 -> {len(enriched)} 条 (总计 {total})")
+            logger.info(f"📄 [DayDayMap] 第 1 页 -> {len(enriched)} 条 (总计 {total})")
             return enriched
 
     except Exception as e:
