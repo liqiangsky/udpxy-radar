@@ -15,6 +15,7 @@ class GlobalSettingsUpdate(BaseModel):
     # zoomeye 配置
     zoomeyeEnabled: bool = True
     zoomeyeFetchCron: str = ""
+    zoomeyeScanCron: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

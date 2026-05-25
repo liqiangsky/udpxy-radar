@@ -120,6 +120,17 @@
         </div>
 
         <div class="form-group">
+          <label>定时扫描 (Cron)</label>
+          <input
+            v-model="settings.zoomeye.scanCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">使用 ZoomEye 缓存数据进行扫描的定时任务。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
           <label>手动拉取测试</label>
           <button
             class="fetch-btn-mini"
@@ -269,7 +280,7 @@ const handleManualFetch = async () => {
 const settings = reactive({
   github: { enabled: true, token: '', scanCron: '' },
   ozone: { enabled: false, fetchCron: '', scanCron: '' },
-  zoomeye: { enabled: false, fetchCron: '' },
+  zoomeye: { enabled: false, fetchCron: '', scanCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
   scheduling: { janitorCron: '' }
 })
@@ -317,6 +328,7 @@ const handleSave = async () => {
       ozoneScanCron: settings.ozone.scanCron,
       zoomeyeEnabled: settings.zoomeye.enabled,
       zoomeyeFetchCron: settings.zoomeye.fetchCron,
+      zoomeyeScanCron: settings.zoomeye.scanCron,
       concurrency: settings.engine.concurrency,
       timeout: settings.engine.timeout,
       configDelay: settings.engine.configDelay,

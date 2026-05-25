@@ -331,6 +331,7 @@ class ActiveSourceJanitor:
         last_ozone_fetch_exec = ""
         last_zoomeye_fetch_exec = ""
         last_ozone_scan_exec = ""
+        last_zoomeye_scan_exec = ""
 
         # HF 自动同步定时器（每分钟一次）
         last_hf_sync = time.time()
@@ -534,6 +535,22 @@ class ActiveSourceJanitor:
                             trigger_background_queue([r["id"] for r in rows])
                         else:
                             logger.info("📡 [0.zone] 无启用的 ozone 扫描配置")
+
+                # ZoomEye 定时扫描
+                zoomeye_scan_cron = get_setting("zoomeye_scan_cron", "")
+                if zoomeye_scan_cron and cron_match(zoomeye_scan_cron, cron_now):
+                    exec_key = now.strftime("%Y-%m-%d %H:%M")
+                    if exec_key != last_zoomeye_scan_exec and task_runner.is_idle():
+                        last_zoomeye_scan_exec = exec_key
+                        logger.info(f"⏰ [Cron触发] ZoomEye 定时扫描 -> cron: {zoomeye_scan_cron}")
+                        with get_db() as conn:
+                            rows = conn.execute(
+                                "SELECT id FROM scan_config WHERE dataSource='zoomeye' AND enabled=1"
+                            ).fetchall()
+                        if rows:
+                            trigger_background_queue([r["id"] for r in rows])
+                        else:
+                            logger.info("📡 [ZoomEye] 无启用的 zoomeye 扫描配置")
 
             except Exception as e:
                 logger.error(f"❌ [复测异常] 老化器心跳内爆: {e}")
