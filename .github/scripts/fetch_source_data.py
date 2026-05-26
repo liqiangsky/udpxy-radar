@@ -87,11 +87,10 @@ async def main():
 
     print(f"[开始] source_url={SOURCE_URL}, source_type={SOURCE_TYPE}")
 
-    # Hunter 特殊处理：纯 API 请求，不需要 Playwright，用 http.client 绕过 WAF
+    # Hunter 特殊处理：纯 API 请求，用 curl 绕过 WAF TLS 指纹识别
     if SOURCE_TYPE == "hunter":
-        import http.client
-        import ssl
-        from urllib.parse import urlencode, parse_qs, urlparse
+        import subprocess
+        from urllib.parse import urlencode
 
         # 从 callback_url 的 query param 中提取 API Key
         parsed_cb = urlparse(CALLBACK_URL)
@@ -117,45 +116,37 @@ async def main():
                 "start_time": today,
                 "end_time": today
             })
-            url = f"/openApi/search?{query_string}"
+            url = f"https://hunter.qianxin.com/openApi/search?{query_string}"
 
             print(f"[Hunter] 拉取第 {page} 页...")
 
-            ctx = ssl.create_default_context()
-            conn = http.client.HTTPSConnection("hunter.qianxin.com", 443, context=ctx)
-            headers = {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-origin",
-            }
+            # 用 curl 请求，TLS 指纹最接近真实浏览器
+            cmd = [
+                "curl", "-s", "-L",
+                "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                "-H", "Accept: application/json, text/plain, */*",
+                "-H", "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8",
+                url
+            ]
 
             try:
-                conn.request("GET", url, headers=headers)
-                resp = conn.getresponse()
-                body = resp.read().decode("utf-8")
-                print(f"[Hunter] 状态码: {resp.status}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                print(f"[Hunter] 状态码: curl exit {result.returncode}")
 
-                if resp.status != 200:
-                    print(f"[ERROR] Hunter 请求失败: {body[:500]}")
-                    conn.close()
+                if result.returncode != 0:
+                    print(f"[ERROR] curl 失败: {result.stderr}")
                     break
 
-                conn.close()
-                result = json.loads(body)
+                body = result.stdout
+                data = json.loads(body)
 
-                if result.get("code") != 200:
-                    print(f"[ERROR] Hunter 返回错误: {result.get('message', 'unknown')}")
+                if data.get("code") != 200:
+                    print(f"[ERROR] Hunter 返回错误: {data.get('message', 'unknown')}")
                     break
 
-                data = result.get("data", {})
-                arr = data.get("arr", [])
-                rest_quota = data.get("rest_quota", "")
-                total = data.get("total", 0)
+                arr = data.get("data", {}).get("arr", [])
+                rest_quota = data.get("data", {}).get("rest_quota", "")
+                total = data.get("data", {}).get("total", 0)
 
                 if not arr:
                     print(f"[Hunter] 第 {page} 页无数据，停止翻页")
