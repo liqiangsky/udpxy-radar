@@ -1,0 +1,10 @@
+name = "udpxy-radar-heartbeat"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# 每分钟触发一次
+triggers = { cron = ["* * * * *"] }
+
+# 认证 token（可选，需与 HF Spaces 的 callback_token 一致）
+# [vars]
+# CRON_TOKEN = "your-token-here"

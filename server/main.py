@@ -13,7 +13,7 @@ import logging
 from db.database import init_db, init_cache_db
 from services.hf_sync import pull_from_hf, push_to_hf
 from core.engine import janitor
-from routers import settings, configs, iptv, templates  # 导入拆分出去的路由模块
+from routers import settings, configs, iptv, templates, cron  # 导入拆分出去的路由模块
 
 # 日志配置
 logging.basicConfig(
@@ -50,3 +50,4 @@ app.include_router(settings.router, prefix="/api", tags=["全局设置"])
 app.include_router(templates.router, prefix="/api", tags=["配置模板"])
 app.include_router(configs.router, prefix="/api", tags=["扫描配置"])
 app.include_router(iptv.router, prefix="/api", tags=["纯净活源池"])
+app.include_router(cron.router, prefix="/api", tags=["定时心跳"])
