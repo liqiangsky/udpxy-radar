@@ -12,6 +12,7 @@ class GlobalSettingsUpdate(BaseModel):
     timeout: int = Field(2000, ge=200, le=10000)
     configDelay: int = Field(3, ge=0, le=60)
     janitorCron: str = ""
+    callbackToken: str = ""
     # zoomeye 配置
     zoomeyeEnabled: bool = True
     zoomeyeFetchCron: str = ""

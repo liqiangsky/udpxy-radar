@@ -40,6 +40,9 @@ def api_get_settings():
         },
         "scheduling": {
             "janitorCron": get_setting("janitor_cron", "")
+        },
+        "security": {
+            "callbackToken": get_setting("callback_token", "")
         }
     }
 
@@ -71,6 +74,7 @@ def api_update_settings(data: GlobalSettingsUpdate):
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('timeout', ?)", (str(data.timeout),))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('config_delay', ?)", (str(data.configDelay),))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('janitor_cron', ?)", (data.janitorCron,))
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('callback_token', ?)", (data.callbackToken,))
     from core.engine import janitor
     janitor.stop()
     janitor.start()

@@ -25,9 +25,9 @@ async function triggerHeartbeat(env) {
     console.log(`[heartbeat] POST ${url}`);
 
     const headers = { "Content-Type": "application/json" };
-    const token = env.CRON_TOKEN || "";
+    const token = env.CALLBACK_TOKEN || "";
     if (token) {
-      headers["X-Cron-Token"] = token;
+      headers["X-Callback-Token"] = token;
     }
 
     const res = await fetch(url, {

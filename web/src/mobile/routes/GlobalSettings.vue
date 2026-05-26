@@ -354,6 +354,25 @@
         </div>
       </div>
 
+      <!-- 安全认证 -->
+      <div class="card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">lock</span>
+          <h2>安全认证</h2>
+        </div>
+
+        <div class="form-group">
+          <label>API 认证 Token</label>
+          <input
+            v-model="settings.security.callbackToken"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不启用认证"
+          />
+          <p class="field-desc">设置后，所有写操作需携带 X-Callback-Token 请求头。CF Worker 和 GitHub Action 需同步配置。</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -393,7 +412,8 @@ const settings = reactive({
   daydaymap: { enabled: false, fetchCron: '', scanCron: '' },
   hunter: { enabled: false, apiKey: '', fetchCron: '', scanCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
-  scheduling: { janitorCron: '' }
+  scheduling: { janitorCron: '' },
+  security: { callbackToken: '' }
 })
 
 const saving = ref(false)
@@ -407,6 +427,7 @@ const loadSettings = async () => {
   if (res.hunter) Object.assign(settings.hunter, res.hunter)
   if (res.engine) Object.assign(settings.engine, res.engine)
   if (res.scheduling) Object.assign(settings.scheduling, res.scheduling)
+  if (res.security) Object.assign(settings.security, res.security)
 }
 
 const zoomeyeFetching = ref(false)
@@ -492,7 +513,8 @@ const handleSave = async () => {
       concurrency: settings.engine.concurrency,
       timeout: settings.engine.timeout,
       configDelay: settings.engine.configDelay,
-      janitorCron: settings.scheduling.janitorCron
+      janitorCron: settings.scheduling.janitorCron,
+      callbackToken: settings.security.callbackToken
     }
     await settingsStore.update(payload)
     toast.success('设置已保存')

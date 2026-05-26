@@ -37,6 +37,7 @@ export const useSettingsStore = defineStore('settings', () => {
     if (payload.timeout !== undefined) data.value.engine.timeout = payload.timeout
     if (payload.configDelay !== undefined) data.value.engine.configDelay = payload.configDelay
     if (payload.janitorCron !== undefined) data.value.scheduling.janitorCron = payload.janitorCron
+    if (payload.callbackToken !== undefined) data.value.security.callbackToken = payload.callbackToken
     return data.value
   }
 

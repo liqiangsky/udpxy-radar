@@ -7,4 +7,4 @@ triggers = { cron = ["* * * * *"] }
 
 # 认证 token（可选，需与 HF Spaces 的 callback_token 一致）
 # [vars]
-# CRON_TOKEN = "your-token-here"
+# CALLBACK_TOKEN = "your-token-here"
