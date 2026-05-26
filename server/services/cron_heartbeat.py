@@ -168,7 +168,7 @@ async def handle_heartbeat() -> dict:
 
     # 0.zone 定时拉取
     ozone_fetch_cron = get_setting("ozone_fetch_cron", "")
-    if cron_match(ozone_fetch_cron, cron_now) and _should_exec("ozone_fetch", now):
+    if cron_match(ozone_fetch_cron, cron_now) and _should_exec("ozone_fetch", now) and get_setting("ozone_enabled", "0") == "1":
         logger.info(f"⏰ [心跳触发] 0.zone 定时拉取 -> cron: {ozone_fetch_cron}")
         from services.ozone import fetch_ozone_sources
         sources = await fetch_ozone_sources(page=1)
@@ -178,7 +178,7 @@ async def handle_heartbeat() -> dict:
 
     # zoomeye 定时拉取（通过 GitHub Action）
     zoomeye_fetch_cron = get_setting("zoomeye_fetch_cron", "")
-    if cron_match(zoomeye_fetch_cron, cron_now) and _should_exec("zoomeye_fetch", now):
+    if cron_match(zoomeye_fetch_cron, cron_now) and _should_exec("zoomeye_fetch", now) and get_setting("zoomeye_enabled", "0") == "1":
         logger.info(f"⏰ [心跳触发] zoomeye 定时拉取 -> cron: {zoomeye_fetch_cron}")
         from services.github_action import trigger_source_fetch
         source_url = get_setting("zoomeye_source_url", "https://www.zoomeye.ai/api/search?q=YXBwPSJ1ZHB4eSBtdWx0aWNhc3QgVURQLXRvLUhUVFAiICYmIGNvdW50cnk9IuS4reWbvSI%3D")
@@ -213,7 +213,7 @@ async def handle_heartbeat() -> dict:
 
     # DayDayMap 定时拉取
     daydaymap_fetch_cron = get_setting("daydaymap_fetch_cron", "")
-    if cron_match(daydaymap_fetch_cron, cron_now) and _should_exec("daydaymap_fetch", now):
+    if cron_match(daydaymap_fetch_cron, cron_now) and _should_exec("daydaymap_fetch", now) and get_setting("daydaymap_enabled", "0") == "1":
         logger.info(f"⏰ [心跳触发] DayDayMap 定时拉取 -> cron: {daydaymap_fetch_cron}")
         from services.daydaymap import fetch_daydaymap_sources
         sources = await fetch_daydaymap_sources()
@@ -236,7 +236,7 @@ async def handle_heartbeat() -> dict:
 
     # Hunter 定时拉取
     hunter_fetch_cron = get_setting("hunter_fetch_cron", "")
-    if cron_match(hunter_fetch_cron, cron_now) and _should_exec("hunter_fetch", now):
+    if cron_match(hunter_fetch_cron, cron_now) and _should_exec("hunter_fetch", now) and get_setting("hunter_enabled", "0") == "1":
         logger.info(f"⏰ [心跳触发] Hunter 定时拉取 -> cron: {hunter_fetch_cron}")
         from services.hunter import fetch_hunter_sources
         sources = await fetch_hunter_sources()
