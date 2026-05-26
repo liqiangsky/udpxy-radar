@@ -90,7 +90,7 @@ async def main():
     # Hunter 特殊处理：纯 API 请求，用 curl 绕过 WAF TLS 指纹识别
     if SOURCE_TYPE == "hunter":
         import subprocess
-        from urllib.parse import urlencode
+        from urllib.parse import urlencode, parse_qs
 
         # 从 callback_url 的 query param 中提取 API Key
         parsed_cb = urlparse(CALLBACK_URL)
