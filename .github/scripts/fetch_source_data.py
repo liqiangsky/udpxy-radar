@@ -137,7 +137,9 @@ async def main():
                     print(f"[ERROR] curl 失败: {result.stderr}")
                     break
 
-                body = result.stdout
+                body = result.stdout.strip()
+                print(f"[Hunter] 响应长度: {len(body)} 字符, 前200字符: {body[:200]}")
+
                 data = json.loads(body)
 
                 if data.get("code") != 200:
