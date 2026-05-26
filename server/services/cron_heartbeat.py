@@ -4,6 +4,7 @@ Cloudflare Worker 心跳端点服务
 CF Worker 每分钟 ping 此接口，HF 内部检查当前时间是否匹配任何 cron 任务
 """
 import datetime
+import asyncio
 import logging
 from db.database import get_db, get_cache_db, get_setting
 from core.engine import trigger_background_queue
@@ -96,14 +97,74 @@ async def handle_heartbeat() -> dict:
         if task_runner.is_idle():
             logger.info(f"⏰ [心跳触发] 定时复测 -> cron: {janitor_cron}")
             from db.database import get_cache_db
-            with get_cache_db() as conn:
-                rows = conn.execute(
-                    "SELECT id FROM iptv_list"
-                ).fetchall()
-            if rows:
-                ids = [r["id"] for r in rows]
-                task_runner.start_rechecking(ids)
-                triggered.append({"task": "recheck", "count": len(ids)})
+            import aiohttp
+            timeout_sec = int(get_setting("timeout", "2000")) / 1000.0
+            concurrency = int(get_setting("concurrency", "64"))
+            sem = asyncio.Semaphore(concurrency)
+
+            task_runner.set_rechecking()
+            try:
+                with get_cache_db() as conn:
+                    active_sources = conn.execute("SELECT * FROM iptv_list").fetchall()
+
+                logger.info(f"🧹 [心跳复测] 开始复测 {len(active_sources)} 个活源")
+
+                if active_sources:
+                    async def recheck_all():
+                        timeout = aiohttp.ClientTimeout(total=timeout_sec)
+                        connector = aiohttp.TCPConnector(limit=256, ssl=False)
+
+                        async with aiohttp.ClientSession(
+                            timeout=timeout,
+                            connector=connector
+                        ) as session:
+
+                            async def recheck_worker(source):
+                                async with sem:
+                                    if task_runner.should_pause_recheck():
+                                        while task_runner.should_pause_recheck():
+                                            await asyncio.sleep(2)
+
+                                    host_val = source["host"]
+                                    target_val = source["target"]
+                                    proto = (source["protocol"] or "rtp").lower().strip()
+
+                                    if not host_val.startswith("http"):
+                                        host_val = f"http://{host_val}"
+                                    host_val = host_val.rstrip("/")
+
+                                    try:
+                                        start_t = __import__("time").time()
+                                        test_url = f"{host_val}/{proto}/{target_val}"
+                                        async with session.get(
+                                            test_url,
+                                            timeout=aiohttp.ClientTimeout(total=timeout_sec),
+                                            headers={"User-Agent": "Mozilla/5.0"}
+                                        ) as r:
+                                            if r.status in [200, 206] and await r.content.read(512):
+                                                delay = int((__import__("time").time() - start_t) * 1000)
+                                                with get_cache_db() as conn:
+                                                    conn.execute(
+                                                        "UPDATE iptv_list SET delay=?, updateTime=?, protocol=? WHERE id=?",
+                                                        (delay, int(__import__("time").time() * 1000), proto, source["id"])
+                                                    )
+                                                return
+                                    except Exception:
+                                        pass
+
+                                    logger.warning(f"🗑️ [老化淘汰] {source['host']}")
+                                    with get_cache_db() as conn:
+                                        conn.execute("DELETE FROM iptv_list WHERE id=?", (source["id"],))
+
+                            await asyncio.gather(
+                                *(recheck_worker(s) for s in active_sources)
+                            )
+                            logger.info(f"🧹 [心跳复测完成] {len(active_sources)} 个活源复测完毕")
+
+                await recheck_all()
+                triggered.append({"task": "recheck", "count": len(active_sources)})
+            finally:
+                task_runner.clear_rechecking()
 
     # 0.zone 定时拉取
     ozone_fetch_cron = get_setting("ozone_fetch_cron", "")
