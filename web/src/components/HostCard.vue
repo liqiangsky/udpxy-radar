@@ -30,7 +30,7 @@
       <div class="grid-item">
         <span class="badge-lbl">来源</span>
         <span class="source-badge">
-          <img :src="item.sourceType === 'ozone' ? sourceLogo0zone : item.sourceType === 'zoomeye' ? sourceLogoZoomeye : sourceLogoGithub" class="source-logo" />
+          <img :src="getItemSourceImg(item.sourceType)" class="source-logo" />
           <span class="badge-txt">{{ item.sourceName }}</span>
         </span>
       </div>
@@ -49,8 +49,9 @@
 
 <script setup>
 import sourceLogoGithub from '@/assets/github.png'
-import sourceLogo0zone from '@/assets/零零信安.png'
-import sourceLogoZoomeye from '@/assets/zoomeye.png'
+import sourceLogo0zone from '@/assets/zero_zone.png'
+import sourceLogoZoomEye from '@/assets/zoomeye.png'
+import sourceLogoDayDayMap from '@/assets/daydaymap.svg'
 
 defineProps({
   item: {
@@ -59,6 +60,15 @@ defineProps({
   }
 })
 defineEmits(['copy', 'test'])
+
+const getItemSourceImg = (sourceType) => {
+  return {
+    'ozone': sourceLogo0zone,
+    'github': sourceLogoGithub,
+    'zoomeye': sourceLogoZoomEye,
+    'daydaymap': sourceLogoDayDayMap,
+  }[sourceType]
+}
 </script>
 
 <style scoped>

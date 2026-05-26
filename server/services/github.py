@@ -2,6 +2,7 @@ import aiohttp
 import re
 import logging
 import asyncio
+import random
 from typing import List, Optional
 from db.database import get_setting
 
@@ -55,8 +56,8 @@ async def search_github_sources(session: aiohttp.ClientSession, target_addr: str
             api_url = "https://api.github.com/search/code"
 
             try:
-                # 🛡️ 翻页呼吸器（避免频繁请求触发 GitHub 403）
-                await asyncio.sleep(2.5)
+                # 🛡️ 翻页呼吸器（避免频繁请求触发 GitHub 403），随机 3-5s
+                await asyncio.sleep(random.uniform(3, 5))
 
                 async with session.get(api_url, headers=headers, params=params, timeout=15) as resp:
                     if resp.status == 403:
