@@ -5,7 +5,7 @@ import time
 from typing import Optional
 from datetime import datetime
 
-from db.database import get_db
+from db.database import get_cache_db
 
 logger = logging.getLogger("udpxy_radar")
 router = APIRouter()
@@ -50,7 +50,7 @@ def api_get_iptv_pool(
         else "1=1"
     )
 
-    with get_db() as conn:
+    with get_cache_db() as conn:
 
         rows = conn.execute(f"""
             SELECT *
@@ -231,7 +231,7 @@ def api_get_iptv_pool(
 @router.post("/iptv/{source_id}/test-delay")
 async def api_test_delay(source_id: int):
     """测试单个活源延迟，更新数据库并返回最新延迟"""
-    with get_db() as conn:
+    with get_cache_db() as conn:
         row = conn.execute("SELECT * FROM iptv_list WHERE id=?", (source_id,)).fetchone()
 
     if not row:
@@ -260,7 +260,7 @@ async def api_test_delay(source_id: int):
                 if r.status in [200, 206] and await r.content.read(512):
                     delay = int((time.time() - start_t) * 1000)
                     now = int(time.time() * 1000)
-                    with get_db() as conn:
+                    with get_cache_db() as conn:
                         conn.execute(
                             "UPDATE iptv_list SET delay=?, updateTime=? WHERE id=?",
                             (delay, now, source_id)

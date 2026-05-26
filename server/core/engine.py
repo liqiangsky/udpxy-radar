@@ -10,7 +10,7 @@ from db.database import get_db, get_cache_db, get_setting
 from core.status import task_runner
 from services.github import search_github_sources
 from services.ozone import fetch_ozone_sources
-from services.source_cache import get_cached_hosts, cache_sources
+from services.source_cache import get_cached_hosts, cache_sources, get_cached_geo, cache_host_geo
 from services.validator import verify_single_host
 from services.geoip import enrich_geo_batch
 from services.hf_sync import push_to_hf
@@ -192,8 +192,24 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     )
 
                     if _valid_hosts:
-                        # 统一 geoip 富化
+                        # 预填充已有 geo 缓存，跳过重复查询
+                        for host_item in _valid_hosts:
+                            cached = get_cached_geo(host_item["host"])
+                            if cached:
+                                host_item.update(cached)
+
+                        # 统一 geoip 富化（已有 geo 的会自动跳过）
                         enriched = await enrich_geo_batch(session, _valid_hosts)
+
+                        # 新 geo 回写 source_cache
+                        new_geo_count = 0
+                        for item in enriched:
+                            if item.get("geoRegion") or item.get("geoOperator"):
+                                cache_host_geo(item["sourceType"], item["host"], item.get("geoRegion", ""), item.get("geoOperator", ""))
+                                new_geo_count += 1
+
+                        if new_geo_count:
+                            logger.info(f"💾 [geo缓存] {new_geo_count} 条新 geo 信息已写入 source_cache")
 
                         now_stamp = int(time.time() * 1000)
 
