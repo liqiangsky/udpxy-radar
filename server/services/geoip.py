@@ -16,7 +16,7 @@ async def query_geoip(session: aiohttp.ClientSession, ip: str) -> dict:
                     "region": data.get("regionName", "").replace("省", "").replace("市", ""),
                     "operator": data.get("isp", "")
                 }
-                logger.debug(f"🌍 [geoip] {ip} -> {result}")
+                logger.info(f"🌍 [geoip] {ip} -> {result}")
                 return result
             else:
                 logger.debug(f"🌍 [geoip] {ip} HTTP {resp.status}")
@@ -31,6 +31,8 @@ async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) 
     保留原始字段（如 delay、protocol 等），只追加 geo 信息
     """
     enriched = []
+    queried_count = 0
+    skipped_count = 0
     for item in sources:
         host = item.get("host", "")
         if not item.get("geoRegion") and not item.get("geoOperator"):
@@ -38,12 +40,14 @@ async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) 
             geo = await query_geoip(session, ip_part)
             region_val = geo.get("region", "")
             operator_val = geo.get("operator", "")
-            logger.info(f"🌍 [geoip] {host} -> region={region_val!r}, operator={operator_val!r}")
+            queried_count += 1
             enriched.append({
                 **item,
                 "geoRegion": region_val,
                 "geoOperator": operator_val
             })
         else:
+            skipped_count += 1
             enriched.append(item)
+    logger.info(f"🌍 [geoip富化] 共 {len(sources)} 条, 查询 {queried_count} 条, 跳过(已有geo) {skipped_count} 条")
     return enriched
