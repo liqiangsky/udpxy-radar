@@ -94,24 +94,24 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
 
                 source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap"}
 
-                candidate_hosts = []
+                candidate_hosts = []  # list of (host, source_type, source_name)
                 for ds in data_sources:
-                    source_name = source_name_map.get(ds, ds)
+                    ds_name = source_name_map.get(ds, ds)
                     if ds == "ozone":
                         region = config.get("templateRegion", "")
                         hosts = get_cached_hosts("ozone", region)
                         logger.info(f"📡 [ozone] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
-                        candidate_hosts.extend(hosts)
+                        candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "zoomeye":
                         region = config.get("templateRegion", "")
                         hosts = get_cached_hosts("zoomeye", region)
                         logger.info(f"📡 [zoomeye] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
-                        candidate_hosts.extend(hosts)
+                        candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "daydaymap":
                         region = config.get("templateRegion", "")
                         hosts = get_cached_hosts("daydaymap", region)
                         logger.info(f"📡 [daydaymap] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
-                        candidate_hosts.extend(hosts)
+                        candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "github":
                         hosts = await search_github_sources(
                             session,
@@ -119,10 +119,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                             config["searchDepth"],
                             task_runner.should_stop
                         )
-                        candidate_hosts.extend(hosts)
-
-                source_type = raw_ds if raw_ds else "multi"
-                source_name = " / ".join(source_name_map.get(s, s) for s in data_sources) if data_sources else "全部"
+                        candidate_hosts.extend((h, "github", "GitHub") for h in hosts)
 
                 if not candidate_hosts:
                     logger.warning(f"⚠️ [无候选源] {config['name']} 未搜索到任何候选 host")
@@ -138,7 +135,8 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
 
                     sem = asyncio.Semaphore(run_concurrency)
 
-                    async def worker(host_item):
+                    async def worker(host_entry):
+                        host_item, host_source_type, host_source_name = host_entry
 
                         if task_runner.should_stop():
                             return
@@ -169,12 +167,14 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                 if not res:
                                     return
 
-                                # 收集验证通过的结果
+                                # 收集验证通过的结果（携带来源标签）
                                 with _valid_lock:
                                     _valid_hosts.append({
                                         "host": host_item,
                                         "delay": res["delay"],
-                                        "protocol": res["protocol"]
+                                        "protocol": res["protocol"],
+                                        "sourceType": host_source_type,
+                                        "sourceName": host_source_name
                                     })
 
                             except Exception as e:
@@ -223,7 +223,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                             geoOperator = excluded.geoOperator
                                     """, (
                                         host_item, ip_val, int(port_val),
-                                        source_type, source_name,
+                                        item["sourceType"], item["sourceName"],
                                         config.get("templateRegion", ""),
                                         config.get("templateOperator", ""),
                                         item["geoRegion"], item["geoOperator"],
