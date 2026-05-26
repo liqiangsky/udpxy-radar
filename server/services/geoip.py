@@ -28,26 +28,46 @@ async def query_geoip(session: aiohttp.ClientSession, ip: str) -> dict:
 
 async def enrich_geo_batch(session: aiohttp.ClientSession, sources: list[dict]) -> list[dict]:
     """批量富化 geo 信息：对缺少 geoRegion/geoOperator 的 host 条目进行 geoip 查询
-    保留原始字段（如 delay、protocol 等），只追加 geo 信息
+    保留原始字段（如 delay、protocol 等），只追加 geo 信息。
+    查询前先检查 source_cache 预填充，避免重复 API 调用。
     """
+    from services.source_cache import get_cached_geo
+
     enriched = []
     queried_count = 0
     skipped_count = 0
+    cache_hit_count = 0
+
     for item in sources:
         host = item.get("host", "")
-        if not item.get("geoRegion") and not item.get("geoOperator"):
-            ip_part = host.rsplit(":", 1)[0] if ":" in host else host
-            geo = await query_geoip(session, ip_part)
-            region_val = geo.get("region", "")
-            operator_val = geo.get("operator", "")
-            queried_count += 1
-            enriched.append({
-                **item,
-                "geoRegion": region_val,
-                "geoOperator": operator_val
-            })
-        else:
+
+        if item.get("geoRegion") or item.get("geoOperator"):
             skipped_count += 1
             enriched.append(item)
-    logger.info(f"🌍 [geoip富化] 共 {len(sources)} 条, 查询 {queried_count} 条, 跳过(已有geo) {skipped_count} 条")
+            continue
+
+        # 先查 source_cache 预填充
+        cached = get_cached_geo(host)
+        if cached and (cached.get("geoRegion") or cached.get("geoOperator")):
+            enriched.append({
+                **item,
+                "geoRegion": cached.get("geoRegion", ""),
+                "geoOperator": cached.get("geoOperator", "")
+            })
+            cache_hit_count += 1
+            continue
+
+        # 缓存未命中，走 geoip API
+        ip_part = host.rsplit(":", 1)[0] if ":" in host else host
+        geo = await query_geoip(session, ip_part)
+        region_val = geo.get("region", "")
+        operator_val = geo.get("operator", "")
+        queried_count += 1
+        enriched.append({
+            **item,
+            "geoRegion": region_val,
+            "geoOperator": operator_val
+        })
+
+    logger.info(f"🌍 [geoip富化] 共 {len(sources)} 条, 缓存命中 {cache_hit_count} 条, API查询 {queried_count} 条, 跳过(已有geo) {skipped_count} 条")
     return enriched
