@@ -12,16 +12,22 @@ router = APIRouter()
 
 
 def _check_data_source_enabled(ds: str):
-    if ds == "github" and get_setting("github_enabled", "1") != "1":
-        raise HTTPException(400, "GitHub 数据源未启用")
-    if ds == "ozone" and get_setting("ozone_enabled", "0") != "1":
-        raise HTTPException(400, "零零信安 数据源未启用")
-    if ds == "zoomeye" and get_setting("zoomeye_enabled", "0") != "1":
-        raise HTTPException(400, "ZoomEye 数据源未启用")
-    if ds == "daydaymap" and get_setting("daydaymap_enabled", "0") != "1":
-        raise HTTPException(400, "DayDayMap 数据源未启用")
-    if ds not in ("github", "ozone", "zoomeye", "daydaymap"):
-        raise HTTPException(400, f"不支持的数据源: {ds}")
+    if not ds:
+        return
+    for name in ds.split(','):
+        name = name.strip()
+        if not name:
+            continue
+        if name == "github" and get_setting("github_enabled", "1") != "1":
+            raise HTTPException(400, "GitHub 数据源未启用")
+        if name == "ozone" and get_setting("ozone_enabled", "0") != "1":
+            raise HTTPException(400, "零零信安 数据源未启用")
+        if name == "zoomeye" and get_setting("zoomeye_enabled", "0") != "1":
+            raise HTTPException(400, "ZoomEye 数据源未启用")
+        if name == "daydaymap" and get_setting("daydaymap_enabled", "0") != "1":
+            raise HTTPException(400, "DayDayMap 数据源未启用")
+        if name not in ("github", "ozone", "zoomeye", "daydaymap"):
+            raise HTTPException(400, f"不支持的数据源: {name}")
 
 @router.get("/configs")
 def api_list_configs():

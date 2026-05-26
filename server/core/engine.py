@@ -81,32 +81,48 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
             logger.info(f"🚀 [开始扫描] {config['name']}")
 
             try:
-                # 根据 dataSource 路由
-                data_source = config.get("dataSource", "github")
-                source_type = data_source
-                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap"}
-                source_name = source_name_map.get(data_source, data_source)
-
-                if data_source == "ozone":
-                    region = config.get("templateRegion", "")
-                    candidate_hosts = get_cached_hosts("ozone", region)
-                    logger.info(f"📡 [ozone] 从 source_cache 读取, region='{region}', 匹配到 {len(candidate_hosts)} 个 host")
-                elif data_source == "zoomeye":
-                    region = config.get("templateRegion", "")
-                    candidate_hosts = get_cached_hosts("zoomeye", region)
-                    logger.info(f"📡 [zoomeye] 从 source_cache 读取, region='{region}', 匹配到 {len(candidate_hosts)} 个 host")
-                elif data_source == "daydaymap":
-                    region = config.get("templateRegion", "")
-                    candidate_hosts = get_cached_hosts("daydaymap", region)
-                    logger.info(f"📡 [daydaymap] 从 source_cache 读取, region='{region}', 匹配到 {len(candidate_hosts)} 个 host")
+                # 根据 dataSource 路由（空 = 全部启用源，逗号分隔 = 指定源）
+                raw_ds = config.get("dataSource", "").strip()
+                if raw_ds:
+                    data_sources = [s.strip() for s in raw_ds.split(',') if s.strip()]
                 else:
-                    # GitHub 实时搜索
-                    candidate_hosts = await search_github_sources(
-                        session,
-                        config["templateTargetAddress"],
-                        config["searchDepth"],
-                        task_runner.should_stop
-                    )
+                    data_sources = []
+                    for ds_name in ("github", "ozone", "zoomeye", "daydaymap"):
+                        setting_key = f"{ds_name}_enabled"
+                        if get_setting(setting_key, "0" if ds_name != "github" else "1") == "1":
+                            data_sources.append(ds_name)
+
+                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap"}
+
+                candidate_hosts = []
+                for ds in data_sources:
+                    source_name = source_name_map.get(ds, ds)
+                    if ds == "ozone":
+                        region = config.get("templateRegion", "")
+                        hosts = get_cached_hosts("ozone", region)
+                        logger.info(f"📡 [ozone] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
+                        candidate_hosts.extend(hosts)
+                    elif ds == "zoomeye":
+                        region = config.get("templateRegion", "")
+                        hosts = get_cached_hosts("zoomeye", region)
+                        logger.info(f"📡 [zoomeye] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
+                        candidate_hosts.extend(hosts)
+                    elif ds == "daydaymap":
+                        region = config.get("templateRegion", "")
+                        hosts = get_cached_hosts("daydaymap", region)
+                        logger.info(f"📡 [daydaymap] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
+                        candidate_hosts.extend(hosts)
+                    elif ds == "github":
+                        hosts = await search_github_sources(
+                            session,
+                            config["templateTargetAddress"],
+                            config["searchDepth"],
+                            task_runner.should_stop
+                        )
+                        candidate_hosts.extend(hosts)
+
+                source_type = raw_ds if raw_ds else "multi"
+                source_name = " / ".join(source_name_map.get(s, s) for s in data_sources) if data_sources else "全部"
 
                 if not candidate_hosts:
                     logger.warning(f"⚠️ [无候选源] {config['name']} 未搜索到任何候选 host")
