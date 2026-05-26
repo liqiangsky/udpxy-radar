@@ -41,17 +41,30 @@ async def fetch_hunter_sources() -> List[dict]:
 
             logger.info(f"📡 [Hunter] 拉取第 {page} 页...")
 
+            # 打印完整请求信息（调试用）
+            logger.info(f"🔍 [Hunter] 请求 URL: {HUNTER_API_URL}")
+            logger.info(f"🔍 [Hunter] 请求参数: api-key={api_key[:8]}...{api_key[-4:] if len(api_key) > 12 else '(too short)'}, page={page}, page_size={HUNTER_PAGE_SIZE}, start_time={today}, end_time={today}")
+
             try:
                 async with session.get(
                     HUNTER_API_URL,
                     params=params,
                     timeout=aiohttp.ClientTimeout(total=30)
                 ) as resp:
+                    # 打印响应信息（调试用）
+                    logger.info(f"🔍 [Hunter] 响应状态码: {resp.status}")
+                    logger.info(f"🔍 [Hunter] 响应头: {dict(resp.headers)}")
+                    logger.info(f"🔍 [Hunter] 实际请求 URL: {resp.url}")
+
                     if resp.status != 200:
-                        logger.warning(f"⚠️ [Hunter] 请求失败，状态码: {resp.status}")
+                        # 打印响应体（调试用）
+                        raw_text = await resp.text()
+                        logger.warning(f"⚠️ [Hunter] 请求失败，状态码: {resp.status}, 响应体: {raw_text[:500]}")
                         break
 
                     result = await resp.json()
+                    # 打印完整响应（调试用）
+                    logger.info(f"🔍 [Hunter] 完整响应: {result}")
 
                 if result.get("code") != 200:
                     logger.warning(f"⚠️ [Hunter] 返回错误: {result.get('message', 'unknown')}")
