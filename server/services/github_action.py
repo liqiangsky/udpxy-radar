@@ -13,7 +13,7 @@ GITHUB_API = "https://api.github.com"
 WORKFLOW_FILE = "source-fetcher.yml"
 
 
-async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye", hunter_api_key: str = "") -> bool:
+async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye") -> bool:
     token = os.getenv("GITHUB_ACTION_TOKEN", "")
     owner = os.getenv("GITHUB_ACTION_OWNER", "")
     repo = os.getenv("GITHUB_ACTION_REPO", "")
@@ -29,12 +29,6 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye", hu
         return False
 
     callback_url = f"{hf_url}/api/source/push"
-
-    # Hunter API Key 通过 callback_url query param 传递（避免 workflow input 422 问题）
-    if source_type == "hunter" and hunter_api_key:
-        from urllib.parse import quote
-        callback_url += f"?hunter_key={quote(hunter_api_key, safe='')}"
-
     logger.info(f"🚀 [触发GitHub Action] source={source_type}")
     logger.info(f"   回调地址: {callback_url}")
 
