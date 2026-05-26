@@ -46,14 +46,30 @@ async def fetch_hunter_sources() -> List[dict]:
             logger.info(f"🔍 [Hunter] 请求参数: api-key={api_key[:8]}...{api_key[-4:] if len(api_key) > 12 else '(too short)'}, page={page}, page_size={HUNTER_PAGE_SIZE}, start_time={today}, end_time={today}")
 
             try:
+                from urllib.parse import urlencode
+
+                # 手动拼接 URL，避免 aiohttp params 编码被 WAF 识别
+                query_string = urlencode({
+                    "api-key": api_key,
+                    "search": HUNTER_QUERY,
+                    "page": page,
+                    "page_size": HUNTER_PAGE_SIZE,
+                    "is_web": 1,
+                    "start_time": today,
+                    "end_time": today
+                })
+                full_url = f"{HUNTER_API_URL}?{query_string}"
+
                 async with session.get(
-                    HUNTER_API_URL,
-                    params=params,
+                    full_url,
                     timeout=aiohttp.ClientTimeout(total=30),
                     headers={
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
                         "Accept": "application/json, text/plain, */*",
-                        "Accept-Encoding": "identity"
+                        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                        "Accept-Encoding": "gzip, deflate, br",
+                        "Connection": "keep-alive",
+                        "Referer": "https://hunter.qianxin.com/",
                     }
                 ) as resp:
                     # 打印响应信息（调试用）
