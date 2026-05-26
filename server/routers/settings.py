@@ -27,6 +27,12 @@ def api_get_settings():
             "fetchCron": get_setting("daydaymap_fetch_cron", ""),
             "scanCron": get_setting("daydaymap_scan_cron", "")
         },
+        "hunter": {
+            "enabled": get_setting("hunter_enabled", "0") == "1",
+            "apiKey": get_setting("hunter_api_key", ""),
+            "fetchCron": get_setting("hunter_fetch_cron", ""),
+            "scanCron": get_setting("hunter_scan_cron", "")
+        },
         "engine": {
             "concurrency": int(get_setting("concurrency", "64")),
             "timeout": int(get_setting("timeout", "2000")),
@@ -40,9 +46,11 @@ def api_get_settings():
 @router.put("/settings")
 def api_update_settings(data: GlobalSettingsUpdate):
     with get_db() as conn:
+        # github
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_enabled', ?)", ("1" if data.githubEnabled else "0",))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_token', ?)", (data.githubToken,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('github_scan_cron', ?)", (data.githubScanCron,))
+        # 0zone
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('ozone_enabled', ?)", ("1" if data.ozoneEnabled else "0",))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('ozone_fetch_cron', ?)", (data.ozoneFetchCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('ozone_scan_cron', ?)", (data.ozoneScanCron,))
@@ -54,6 +62,11 @@ def api_update_settings(data: GlobalSettingsUpdate):
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('daydaymap_enabled', ?)", ("1" if data.daydaymapEnabled else "0",))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('daydaymap_fetch_cron', ?)", (data.daydaymapFetchCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('daydaymap_scan_cron', ?)", (data.daydaymapScanCron,))
+        # hunter
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('hunter_enabled', ?)", ("1" if data.hunterEnabled else "0",))
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('hunter_api_key', ?)", (data.hunterApiKey,))
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('hunter_fetch_cron', ?)", (data.hunterFetchCron,))
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('hunter_scan_cron', ?)", (data.hunterScanCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('concurrency', ?)", (str(data.concurrency),))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('timeout', ?)", (str(data.timeout),))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('config_delay', ?)", (str(data.configDelay),))

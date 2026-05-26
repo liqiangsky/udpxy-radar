@@ -175,7 +175,7 @@ const fetchTemplates = async () => {
 }
 
 const dataSourceLabel = (ds) => {
-  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye', daydaymap: 'DayDayMap' }
+  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye', daydaymap: 'DayDayMap', hunter: 'Hunter' }
   if (!ds) return '全部'
   return ds.split(',').filter(Boolean).map(d => map[d] || d).join(' / ')
 }
@@ -198,12 +198,14 @@ const enabledDataSources = computed(() => {
     { value: 'github', label: 'GitHub 代码检索' },
     { value: 'ozone', label: '零零信安 空间测绘' },
     { value: 'zoomeye', label: 'ZoomEye 空间测绘' },
-    { value: 'daydaymap', label: 'DayDayMap 空间测绘' }
+    { value: 'daydaymap', label: 'DayDayMap 空间测绘' },
+    { value: 'hunter', label: 'Hunter 空间测绘' }
   ]
   if (s.github?.enabled !== false) sources.push({ value: 'github', label: 'GitHub 代码检索' })
   if (s.ozone?.enabled !== false) sources.push({ value: 'ozone', label: '零零信安 空间测绘' })
   if (s.zoomeye?.enabled !== false) sources.push({ value: 'zoomeye', label: 'ZoomEye 空间测绘' })
   if (s.daydaymap?.enabled !== false) sources.push({ value: 'daydaymap', label: 'DayDayMap 空间测绘' })
+  if (s.hunter?.enabled !== false) sources.push({ value: 'hunter', label: 'Hunter 空间测绘' })
   return sources
 })
 

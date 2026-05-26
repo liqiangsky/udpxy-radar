@@ -29,6 +29,10 @@ export const useSettingsStore = defineStore('settings', () => {
     if (payload.daydaymapEnabled !== undefined) data.value.daydaymap.enabled = payload.daydaymapEnabled
     if (payload.daydaymapFetchCron !== undefined) data.value.daydaymap.fetchCron = payload.daydaymapFetchCron
     if (payload.daydaymapScanCron !== undefined) data.value.daydaymap.scanCron = payload.daydaymapScanCron
+    if (payload.hunterEnabled !== undefined) data.value.hunter.enabled = payload.hunterEnabled
+    if (payload.hunterApiKey !== undefined) data.value.hunter.apiKey = payload.hunterApiKey
+    if (payload.hunterFetchCron !== undefined) data.value.hunter.fetchCron = payload.hunterFetchCron
+    if (payload.hunterScanCron !== undefined) data.value.hunter.scanCron = payload.hunterScanCron
     if (payload.concurrency !== undefined) data.value.engine.concurrency = payload.concurrency
     if (payload.timeout !== undefined) data.value.engine.timeout = payload.timeout
     if (payload.configDelay !== undefined) data.value.engine.configDelay = payload.configDelay

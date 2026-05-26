@@ -19,6 +19,10 @@ class GlobalSettingsUpdate(BaseModel):
     daydaymapEnabled: bool = True
     daydaymapFetchCron: str = ""
     daydaymapScanCron: str = ""
+    hunterEnabled: bool = True
+    hunterApiKey: str = ""
+    hunterFetchCron: str = ""
+    hunterScanCron: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

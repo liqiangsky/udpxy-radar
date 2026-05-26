@@ -193,6 +193,67 @@
         </div>
       </div>
 
+      <!-- Hunter 数据源 -->
+      <div class="settings-card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">radar</span>
+          <h2>Hunter 空间测绘</h2>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="settings.hunter.enabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>API Key</label>
+          <div class="input-with-icon">
+            <span class="material-symbols-outlined input-prefix">key</span>
+            <input
+              v-model="settings.hunter.apiKey"
+              type="password"
+              placeholder="hunter API Key"
+            />
+          </div>
+          <p class="field-desc">奇安信 Hunter API Key，用于解除速率限制。</p>
+        </div>
+
+        <div class="form-group">
+          <label>定时拉取 (Cron)</label>
+          <input
+            v-model="settings.hunter.fetchCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">从 Hunter 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
+          <label>定时扫描 (Cron)</label>
+          <input
+            v-model="settings.hunter.scanCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">使用 Hunter 缓存数据进行扫描的定时任务。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
+          <label>手动拉取测试</label>
+          <button
+            class="fetch-btn-mini"
+            :class="{ fetching: hunterFetching }"
+            @click="handleHunterManualFetch"
+          >
+            <span class="material-symbols-outlined fetch-icon" :class="{ spin: hunterFetching }">cloud_download</span>
+            <span>{{ hunterFetching ? '拉取中' : '拉取 Hunter 源数据' }}</span>
+          </button>
+          <p class="field-desc" v-if="hunterResult">获取到 {{ hunterResult }} 条数据，已写入 source_cache</p>
+          <p class="field-desc">固定搜索词: header="Server: udpxy"&&ip.country=="中国"</p>
+        </div>
+      </div>
+
       <!-- 扫描引擎参数 -->
       <div class="settings-card">
         <div class="card-title-group">
@@ -330,6 +391,7 @@ const settings = reactive({
   ozone: { enabled: false, fetchCron: '', scanCron: '' },
   zoomeye: { enabled: false, fetchCron: '', scanCron: '' },
   daydaymap: { enabled: false, fetchCron: '', scanCron: '' },
+  hunter: { enabled: false, apiKey: '', fetchCron: '', scanCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
   scheduling: { janitorCron: '' }
 })
@@ -342,6 +404,7 @@ const loadSettings = async () => {
   if (res.ozone) Object.assign(settings.ozone, res.ozone)
   if (res.zoomeye) Object.assign(settings.zoomeye, res.zoomeye)
   if (res.daydaymap) Object.assign(settings.daydaymap, res.daydaymap)
+  if (res.hunter) Object.assign(settings.hunter, res.hunter)
   if (res.engine) Object.assign(settings.engine, res.engine)
   if (res.scheduling) Object.assign(settings.scheduling, res.scheduling)
 }
@@ -368,6 +431,26 @@ const handleZoomeyeManualFetch = async () => {
 
 const daydaymapFetching = ref(false)
 const daydaymapResult = ref(0)
+
+const hunterFetching = ref(false)
+const hunterResult = ref(0)
+
+const handleHunterManualFetch = async () => {
+  if (!settings.hunter.enabled) {
+    toast.warning('请先启用 Hunter 数据源')
+    return
+  }
+  hunterFetching.value = true
+  try {
+    const res = await request.post('/hunter/fetch')
+    hunterResult.value = res.fetched
+    toast.success(`拉取成功：获取到 ${res.fetched} 条数据`)
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '拉取失败')
+  } finally {
+    hunterFetching.value = false
+  }
+}
 
 const handleDaydaymapManualFetch = async () => {
   if (!settings.daydaymap.enabled) {
@@ -402,6 +485,10 @@ const handleSave = async () => {
       daydaymapEnabled: settings.daydaymap.enabled,
       daydaymapFetchCron: settings.daydaymap.fetchCron,
       daydaymapScanCron: settings.daydaymap.scanCron,
+      hunterEnabled: settings.hunter.enabled,
+      hunterApiKey: settings.hunter.apiKey,
+      hunterFetchCron: settings.hunter.fetchCron,
+      hunterScanCron: settings.hunter.scanCron,
       concurrency: settings.engine.concurrency,
       timeout: settings.engine.timeout,
       configDelay: settings.engine.configDelay,

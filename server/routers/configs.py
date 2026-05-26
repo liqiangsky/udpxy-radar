@@ -26,7 +26,9 @@ def _check_data_source_enabled(ds: str):
             raise HTTPException(400, "ZoomEye 数据源未启用")
         if name == "daydaymap" and get_setting("daydaymap_enabled", "0") != "1":
             raise HTTPException(400, "DayDayMap 数据源未启用")
-        if name not in ("github", "ozone", "zoomeye", "daydaymap"):
+        if name == "hunter" and get_setting("hunter_enabled", "0") != "1":
+            raise HTTPException(400, "Hunter 数据源未启用")
+        if name not in ("github", "ozone", "zoomeye", "daydaymap", "hunter"):
             raise HTTPException(400, f"不支持的数据源: {name}")
 
 @router.get("/configs")
@@ -181,6 +183,25 @@ async def api_manual_daydaymap_fetch():
     sources = await fetch_daydaymap_sources()
     if sources:
         cache_sources("daydaymap", sources)
+
+    return {
+        "ok": True,
+        "fetched": len(sources),
+        "hosts": [s["host"] for s in sources]
+    }
+
+
+@router.post("/hunter/fetch")
+async def api_manual_hunter_fetch():
+    """
+    手动触发 Hunter 数据拉取
+    """
+    from services.hunter import fetch_hunter_sources
+    from services.source_cache import cache_sources
+
+    sources = await fetch_hunter_sources()
+    if sources:
+        cache_sources("hunter", sources)
 
     return {
         "ok": True,

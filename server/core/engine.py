@@ -87,12 +87,12 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     data_sources = [s.strip() for s in raw_ds.split(',') if s.strip()]
                 else:
                     data_sources = []
-                    for ds_name in ("github", "ozone", "zoomeye", "daydaymap"):
+                    for ds_name in ("github", "ozone", "zoomeye", "daydaymap", "hunter"):
                         setting_key = f"{ds_name}_enabled"
                         if get_setting(setting_key, "0" if ds_name != "github" else "1") == "1":
                             data_sources.append(ds_name)
 
-                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap"}
+                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap", "hunter": "Hunter"}
 
                 candidate_hosts = []  # list of (host, source_type, source_name)
                 for ds in data_sources:
@@ -111,6 +111,11 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         region = config.get("templateRegion", "")
                         hosts = get_cached_hosts("daydaymap", region)
                         logger.info(f"📡 [daydaymap] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
+                        candidate_hosts.extend((h, ds, ds_name) for h in hosts)
+                    elif ds == "hunter":
+                        region = config.get("templateRegion", "")
+                        hosts = get_cached_hosts("hunter", region)
+                        logger.info(f"📡 [hunter] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
                         candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "github":
                         hosts = await search_github_sources(
@@ -354,6 +359,8 @@ class ActiveSourceJanitor:
         last_zoomeye_scan_exec = ""
         last_daydaymap_fetch_exec = ""
         last_daydaymap_scan_exec = ""
+        last_hunter_fetch_exec = ""
+        last_hunter_scan_exec = ""
 
         # HF 自动同步定时器（每分钟一次）
         last_hf_sync = time.time()
@@ -551,7 +558,7 @@ class ActiveSourceJanitor:
                         logger.info(f"⏰ [Cron触发] 0.zone 定时扫描 -> cron: {ozone_scan_cron}")
                         with get_db() as conn:
                             rows = conn.execute(
-                                "SELECT id FROM scan_config WHERE dataSource='ozone' AND enabled=1"
+                                "SELECT id FROM scan_config WHERE dataSource LIKE '%ozone%' AND enabled=1"
                             ).fetchall()
                         if rows:
                             trigger_background_queue([r["id"] for r in rows])
@@ -567,7 +574,7 @@ class ActiveSourceJanitor:
                         logger.info(f"⏰ [Cron触发] ZoomEye 定时扫描 -> cron: {zoomeye_scan_cron}")
                         with get_db() as conn:
                             rows = conn.execute(
-                                "SELECT id FROM scan_config WHERE dataSource='zoomeye' AND enabled=1"
+                                "SELECT id FROM scan_config WHERE dataSource LIKE '%zoomeye%' AND enabled=1"
                             ).fetchall()
                         if rows:
                             trigger_background_queue([r["id"] for r in rows])
@@ -597,12 +604,43 @@ class ActiveSourceJanitor:
                         logger.info(f"⏰ [Cron触发] DayDayMap 定时扫描 -> cron: {daydaymap_scan_cron}")
                         with get_db() as conn:
                             rows = conn.execute(
-                                "SELECT id FROM scan_config WHERE dataSource='daydaymap' AND enabled=1"
+                                "SELECT id FROM scan_config WHERE dataSource LIKE '%daydaymap%' AND enabled=1"
                             ).fetchall()
                         if rows:
                             trigger_background_queue([r["id"] for r in rows])
                         else:
                             logger.info("📡 [DayDayMap] 无启用的 daydaymap 扫描配置")
+
+                # Hunter 定时拉取
+                hunter_fetch_cron = get_setting("hunter_fetch_cron", "")
+                if hunter_fetch_cron and cron_match(hunter_fetch_cron, cron_now):
+                    exec_key = now.strftime("%Y-%m-%d %H:%M")
+                    if exec_key != last_hunter_fetch_exec and task_runner.is_idle():
+                        last_hunter_fetch_exec = exec_key
+                        logger.info(f"⏰ [Cron触发] Hunter 定时拉取 -> cron: {hunter_fetch_cron}")
+                        async def _fetch_hunter():
+                            from services.hunter import fetch_hunter_sources
+                            from services.source_cache import cache_sources
+                            sources = await fetch_hunter_sources()
+                            if sources:
+                                cache_sources("hunter", sources)
+                        asyncio.run(_fetch_hunter())
+
+                # Hunter 定时扫描
+                hunter_scan_cron = get_setting("hunter_scan_cron", "")
+                if hunter_scan_cron and cron_match(hunter_scan_cron, cron_now):
+                    exec_key = now.strftime("%Y-%m-%d %H:%M")
+                    if exec_key != last_hunter_scan_exec and task_runner.is_idle():
+                        last_hunter_scan_exec = exec_key
+                        logger.info(f"⏰ [Cron触发] Hunter 定时扫描 -> cron: {hunter_scan_cron}")
+                        with get_db() as conn:
+                            rows = conn.execute(
+                                "SELECT id FROM scan_config WHERE dataSource LIKE '%hunter%' AND enabled=1"
+                            ).fetchall()
+                        if rows:
+                            trigger_background_queue([r["id"] for r in rows])
+                        else:
+                            logger.info("📡 [Hunter] 无启用的 hunter 扫描配置")
 
             except Exception as e:
                 logger.error(f"❌ [复测异常] 老化器心跳内爆: {e}")
