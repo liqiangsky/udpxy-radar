@@ -4,6 +4,7 @@ HF Spaces 触发 GitHub Action 拉取数据源
 配置通过 HF Spaces 环境变量传入
 """
 import os
+import json
 import logging
 import aiohttp
 
@@ -13,7 +14,7 @@ GITHUB_API = "https://api.github.com"
 WORKFLOW_FILE = "source-fetcher.yml"
 
 
-async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye") -> bool:
+async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye", source_inputs: dict = None) -> bool:
     token = os.getenv("GITHUB_ACTION_TOKEN", "")
     owner = os.getenv("GITHUB_ACTION_OWNER", "")
     repo = os.getenv("GITHUB_ACTION_REPO", "")
@@ -44,7 +45,8 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye") ->
             "source_url": source_url,
             "source_type": source_type,
             "callback_url": callback_url,
-            "callback_token": callback_token
+            "callback_token": callback_token,
+            "source_inputs": json.dumps(source_inputs) if source_inputs else ""
         }
     }
 

@@ -85,36 +85,134 @@ async def main():
         print("[ERROR] 缺少 SOURCE_URL 或 CALLBACK_URL 环境变量")
         return
 
-    # 从目标 URL 解析出首页 URL（用于建立会话）
-    parsed = urlparse(SOURCE_URL)
-    home_url = f"{parsed.scheme}://{parsed.netloc}/"
-
     print(f"[开始] source_url={SOURCE_URL}, source_type={SOURCE_TYPE}")
 
-    # 1. Playwright 获取数据
-    print("[步骤1] Playwright 获取数据...")
-    try:
-        data = await fetch_via_playwright(SOURCE_URL, home_url)
-    except Exception as e:
-        print(f"❌ 请求失败: {e}")
-        return
+    # Hunter 特殊处理：纯 API 请求，不需要 Playwright，用 http.client 绕过 WAF
+    if SOURCE_TYPE == "hunter":
+        import http.client
+        import ssl
+        from urllib.parse import urlencode
 
-    # 2. 加载数据清洗器
-    cleaner = load_cleaner(SOURCE_TYPE)
-    if cleaner:
-        print(f"[步骤2] 使用清洗器: {SOURCE_TYPE}_cleaner")
-        sources = cleaner(data)
-    else:
-        print(f"[警告] 未找到清洗器 {SOURCE_TYPE}_cleaner，尝试通用解析")
-        # 通用兜底: 尝试从响应中提取常见列表字段
-        for key in ("matches", "hosts", "data_list", "data"):
-            if key in data and isinstance(data[key], list):
-                sources = [{"host": item} if isinstance(item, str) else item for item in data[key]]
-                print(f"  → 通用解析: 从 '{key}' 字段提取 {len(sources)} 条")
-                break
-        else:
-            print(f"❌ 无法解析响应数据，请为 {SOURCE_TYPE} 编写清洗器")
+        # 从 source_inputs 传入 API Key
+        try:
+            source_inputs = json.loads(os.getenv("SOURCE_INPUTS", "{}"))
+        except:
+            source_inputs = {}
+        api_key = source_inputs.get("hunter_api_key", "") or os.getenv("HUNTER_API_KEY", "")
+        if not api_key:
+            print("[ERROR] 缺少 HUNTER_API_KEY")
             return
+
+        today = __import__("datetime").date.today().isoformat()
+        HUNTER_QUERY = 'aGVhZGVyPSJTZXJ2ZXI6IHVkcHh5IiYmaXAuY291bnRyeT09IuS4reWbvSI'
+        HUNTER_PAGE_SIZE = 10
+        all_sources = []
+        page = 1
+
+        while True:
+            query_string = urlencode({
+                "api-key": api_key,
+                "search": HUNTER_QUERY,
+                "page": page,
+                "page_size": HUNTER_PAGE_SIZE,
+                "is_web": 1,
+                "start_time": today,
+                "end_time": today
+            })
+            url = f"/openApi/search?{query_string}"
+
+            print(f"[Hunter] 拉取第 {page} 页...")
+
+            ctx = ssl.create_default_context()
+            conn = http.client.HTTPSConnection("hunter.qianxin.com", 443, context=ctx)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+            }
+
+            try:
+                conn.request("GET", url, headers=headers)
+                resp = conn.getresponse()
+                body = resp.read().decode("utf-8")
+                print(f"[Hunter] 状态码: {resp.status}")
+
+                if resp.status != 200:
+                    print(f"[ERROR] Hunter 请求失败: {body[:500]}")
+                    conn.close()
+                    break
+
+                conn.close()
+                result = json.loads(body)
+
+                if result.get("code") != 200:
+                    print(f"[ERROR] Hunter 返回错误: {result.get('message', 'unknown')}")
+                    break
+
+                data = result.get("data", {})
+                arr = data.get("arr", [])
+                rest_quota = data.get("rest_quota", "")
+                total = data.get("total", 0)
+
+                if not arr:
+                    print(f"[Hunter] 第 {page} 页无数据，停止翻页")
+                    break
+
+                for item in arr:
+                    ip = item.get("ip", "")
+                    port = item.get("port", "")
+                    if ip and port:
+                        all_sources.append({"host": f"{ip}:{port}"})
+
+                print(f"[Hunter] 第 {page} 页 -> {len(arr)} 条 (累计 {len(all_sources)}/{total}), {rest_quota}")
+
+                if "0" in rest_quota:
+                    print(f"[Hunter] 积分已用完，停止翻页")
+                    break
+
+                page += 1
+
+            except Exception as e:
+                print(f"[ERROR] Hunter 第 {page} 页请求异常: {e}")
+                break
+
+        sources = all_sources
+        print(f"[Hunter] 总计获取 {len(sources)} 条数据")
+
+    else:
+        # 其他数据源：使用 Playwright 过 JS 挑战
+        parsed = urlparse(SOURCE_URL)
+        home_url = f"{parsed.scheme}://{parsed.netloc}/"
+
+        # 1. Playwright 获取数据
+        print("[步骤1] Playwright 获取数据...")
+        try:
+            data = await fetch_via_playwright(SOURCE_URL, home_url)
+        except Exception as e:
+            print(f"❌ 请求失败: {e}")
+            return
+
+        # 2. 加载数据清洗器
+        cleaner = load_cleaner(SOURCE_TYPE)
+        if cleaner:
+            print(f"[步骤2] 使用清洗器: {SOURCE_TYPE}_cleaner")
+            sources = cleaner(data)
+        else:
+            print(f"[警告] 未找到清洗器 {SOURCE_TYPE}_cleaner，尝试通用解析")
+            sources = []
+            for key in ("matches", "hosts", "data_list", "data"):
+                if key in data and isinstance(data[key], list):
+                    sources = [{"host": item} if isinstance(item, str) else item for item in data[key]]
+                    print(f"  → 通用解析: 从 '{key}' 字段提取 {len(sources)} 条")
+                    break
+            else:
+                print(f"❌ 无法解析响应数据，请为 {SOURCE_TYPE} 编写清洗器")
+                return
 
     print(f"  → 清洗后 {len(sources)} 条数据")
 

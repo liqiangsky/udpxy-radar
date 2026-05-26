@@ -35,4 +35,5 @@ jobs:
           SOURCE_TYPE: ${{ github.event.inputs.source_type }}
           CALLBACK_URL: ${{ github.event.inputs.callback_url }}
           CALLBACK_TOKEN: ${{ github.event.inputs.callback_token }}
+          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
         run: python .github/scripts/fetch_source_data.py

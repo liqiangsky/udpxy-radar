@@ -194,20 +194,24 @@ async def api_manual_daydaymap_fetch():
 @router.post("/hunter/fetch")
 async def api_manual_hunter_fetch():
     """
-    手动触发 Hunter 数据拉取
+    手动触发 Hunter 数据拉取（通过 GitHub Action，HF Spaces 海外 IP 被 Hunter 拦截）
     """
-    from services.hunter import fetch_hunter_sources
-    from services.source_cache import cache_sources
+    from services.github_action import trigger_source_fetch
 
-    sources = await fetch_hunter_sources()
-    if sources:
-        cache_sources("hunter", sources)
+    api_key = get_setting("hunter_api_key", "")
+    if not api_key:
+        raise HTTPException(400, "Hunter API Key 未配置，请在全局设置中保存")
 
-    return {
-        "ok": True,
-        "fetched": len(sources),
-        "hosts": [s["host"] for s in sources]
-    }
+    source_url = "https://hunter.qianxin.com/openApi/search"
+    ok = await trigger_source_fetch(
+        source_url,
+        source_type="hunter",
+        source_inputs={"hunter_api_key": api_key}
+    )
+    if not ok:
+        raise HTTPException(500, "GitHub Action 触发失败，请检查配置")
+
+    return {"ok": True, "message": "已触发，等待 Action 回调推送"}
 
 
 @router.post("/source/push")
