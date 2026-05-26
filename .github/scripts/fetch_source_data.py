@@ -91,12 +91,14 @@ async def main():
     if SOURCE_TYPE == "hunter":
         import http.client
         import ssl
-        from urllib.parse import urlencode
+        from urllib.parse import urlencode, parse_qs, urlparse
 
-        # 从 workflow input 传入 API Key
-        api_key = os.getenv("HUNTER_API_KEY", "")
+        # 从 callback_url 的 query param 中提取 API Key
+        parsed_cb = urlparse(CALLBACK_URL)
+        cb_params = parse_qs(parsed_cb.query)
+        api_key = cb_params.get("hunter_key", [""])[0]
         if not api_key:
-            print("[ERROR] 缺少 HUNTER_API_KEY")
+            print("[ERROR] 缺少 Hunter API Key (通过 callback_url 传递)")
             return
 
         today = __import__("datetime").date.today().isoformat()

@@ -15,9 +15,6 @@ on:
       callback_token:
         description: '回调认证 token（可选）'
         required: false
-      hunter_api_key:
-        description: 'Hunter API Key（仅 Hunter 数据源需要）'
-        required: false
 
 jobs:
   fetch-and-push:
@@ -38,5 +35,4 @@ jobs:
           SOURCE_TYPE: ${{ github.event.inputs.source_type }}
           CALLBACK_URL: ${{ github.event.inputs.callback_url }}
           CALLBACK_TOKEN: ${{ github.event.inputs.callback_token }}
-          HUNTER_API_KEY: ${{ github.event.inputs.hunter_api_key || secrets.HUNTER_API_KEY }}
         run: python .github/scripts/fetch_source_data.py

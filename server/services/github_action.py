@@ -29,6 +29,12 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye", hu
         return False
 
     callback_url = f"{hf_url}/api/source/push"
+
+    # Hunter API Key 通过 callback_url query param 传递（避免 workflow input 422 问题）
+    if source_type == "hunter" and hunter_api_key:
+        from urllib.parse import quote
+        callback_url += f"?hunter_key={quote(hunter_api_key, safe='')}"
+
     logger.info(f"🚀 [触发GitHub Action] source={source_type}")
     logger.info(f"   回调地址: {callback_url}")
 
@@ -47,8 +53,6 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye", hu
             "callback_token": callback_token,
         }
     }
-    if hunter_api_key:
-        dispatch_payload["inputs"]["hunter_api_key"] = hunter_api_key
 
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/workflows/{WORKFLOW_FILE}/dispatches"
 
