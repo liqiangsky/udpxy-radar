@@ -93,12 +93,8 @@ async def main():
         import ssl
         from urllib.parse import urlencode
 
-        # 从 source_inputs 传入 API Key
-        try:
-            source_inputs = json.loads(os.getenv("SOURCE_INPUTS", "{}"))
-        except:
-            source_inputs = {}
-        api_key = source_inputs.get("hunter_api_key", "") or os.getenv("HUNTER_API_KEY", "")
+        # 从 workflow input 传入 API Key
+        api_key = os.getenv("HUNTER_API_KEY", "")
         if not api_key:
             print("[ERROR] 缺少 HUNTER_API_KEY")
             return

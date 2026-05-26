@@ -206,7 +206,7 @@ async def api_manual_hunter_fetch():
     ok = await trigger_source_fetch(
         source_url,
         source_type="hunter",
-        source_inputs={"hunter_api_key": api_key}
+        hunter_api_key=api_key
     )
     if not ok:
         raise HTTPException(500, "GitHub Action 触发失败，请检查配置")
