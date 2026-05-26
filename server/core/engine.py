@@ -6,7 +6,7 @@ import logging
 
 from typing import List
 
-from db.database import get_db, get_setting
+from db.database import get_db, get_cache_db, get_setting
 from core.status import task_runner
 from services.github import search_github_sources
 from services.ozone import fetch_ozone_sources
@@ -152,7 +152,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                 #
                                 # 去重检查：如果 host 已在 iptv_list 中则跳过
                                 #
-                                with get_db() as conn:
+                                with get_cache_db() as conn:
                                     existing = conn.execute(
                                         "SELECT 1 FROM iptv_list WHERE host=?",
                                         (host_item,)
@@ -200,7 +200,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         # 入 iptv_list 活源池
                         _db_write_lock.acquire()
                         try:
-                            with get_db() as conn:
+                            with get_cache_db() as conn:
                                 for item in enriched:
                                     host_item = item["host"]
                                     if ":" in host_item:
@@ -434,7 +434,7 @@ class ActiveSourceJanitor:
                     if exec_key != last_janitor_exec and task_runner.is_idle():
                         last_janitor_exec = exec_key
                         logger.info(f"⏰ [Cron触发] 定时复测 -> cron: {janitor_cron}")
-                        with get_db() as conn:
+                        with get_cache_db() as conn:
                             active_sources = conn.execute("SELECT * FROM iptv_list").fetchall()
 
                         logger.info(f"🧹 [定时复测] 开始复测 {len(active_sources)} 个活源")
@@ -487,7 +487,7 @@ class ActiveSourceJanitor:
                                                             and await r.content.read(512)
                                                         ):
                                                             delay = int((time.time() - start_t) * 1000)
-                                                            with get_db() as conn:
+                                                            with get_cache_db() as conn:
                                                                 conn.execute("""
                                                                     UPDATE iptv_list
                                                                     SET delay=?, updateTime=?, protocol=?
@@ -503,7 +503,7 @@ class ActiveSourceJanitor:
                                                     pass
 
                                                 logger.warning(f"🗑️ [老化淘汰] {source['host']}")
-                                                with get_db() as conn:
+                                                with get_cache_db() as conn:
                                                     conn.execute(
                                                         "DELETE FROM iptv_list WHERE id=?",
                                                         (source["id"],)

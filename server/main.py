@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-from db.database import init_db
+from db.database import init_db, init_cache_db
 from services.hf_sync import pull_from_hf, push_to_hf
 from core.engine import janitor
 from routers import settings, configs, iptv, templates  # 导入拆分出去的路由模块
@@ -27,6 +27,7 @@ async def system_lifespan(app: FastAPI):
     # 启动：先同步云端，再初始化本地，最后唤醒守卫
     pull_from_hf()
     init_db()
+    init_cache_db()
     janitor.start()
     yield
     # 关闭：安全退出，同步备份
