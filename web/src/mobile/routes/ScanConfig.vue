@@ -41,7 +41,7 @@
           </div>
 
           <div class="card-grid">
-            <div class="grid-item">
+            <div class="grid-item full-width">
               <span class="lbl">数据源</span>
               <span class="txt color-blue">{{ dataSourceLabel(config.dataSource) }}</span>
             </div>
@@ -91,10 +91,27 @@
 
           <div class="form-item">
             <label>数据源</label>
-            <select v-model="formData.dataSource" required>
-              <option value="" disabled>选择数据源</option>
-              <option v-for="ds in enabledDataSources" :key="ds.value" :value="ds.value">{{ ds.label }}</option>
-            </select>
+            <div class="source-selector">
+              <label class="source-tag all-tag" :class="{ active: formData.dataSources.length === 0 }">
+                <input type="checkbox" :checked="formData.dataSources.length === 0" @change="toggleAllSources" />
+                全部
+              </label>
+              <label
+                v-for="ds in enabledDataSources"
+                :key="ds.value"
+                class="source-tag"
+                :class="{ active: formData.dataSources.includes(ds.value) }"
+              >
+                <input
+                  type="checkbox"
+                  :value="ds.value"
+                  :checked="formData.dataSources.includes(ds.value)"
+                  @change="toggleSource(ds.value)"
+                />
+                {{ ds.label }}
+              </label>
+            </div>
+            <p class="field-hint">不选表示扫描全部启用的数据源</p>
           </div>
 
           <div class="form-item">
@@ -105,10 +122,10 @@
             </select>
           </div>
 
-          <div class="form-item" v-show="formData.dataSource === 'github'">
+          <div class="form-item" v-show="formData.dataSources.length === 0 || formData.dataSources.includes('github')">
             <label>GitHub 搜索深度 (页数)</label>
             <div class="input-with-unit">
-              <input type="number" v-model="formData.searchDepth" min="1" max="30" />
+              <input type="number" v-model.number="formData.searchDepth" min="1" max="30" />
               <span class="unit-text">页</span>
             </div>
           </div>
@@ -158,8 +175,19 @@ const fetchTemplates = async () => {
 }
 
 const dataSourceLabel = (ds) => {
-  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye' }
-  return map[ds] || ds || '-'
+  const map = { github: 'GitHub', ozone: '零零信安', zoomeye: 'ZoomEye', daydaymap: 'DayDayMap', hunter: 'Hunter' }
+  if (!ds) return '全部'
+  return ds.split(',').filter(Boolean).map(d => map[d] || d).join(' / ')
+}
+
+const toggleSource = (val) => {
+  const idx = formData.dataSources.indexOf(val)
+  if (idx >= 0) formData.dataSources.splice(idx, 1)
+  else formData.dataSources.push(val)
+}
+
+const toggleAllSources = () => {
+  formData.dataSources = []
 }
 
 // 根据全局设置过滤已启用的数据源
@@ -169,11 +197,15 @@ const enabledDataSources = computed(() => {
   if (!s) return [
     { value: 'github', label: 'GitHub 代码检索' },
     { value: 'ozone', label: '零零信安 空间测绘' },
-    { value: 'zoomeye', label: 'ZoomEye 空间测绘' }
+    { value: 'zoomeye', label: 'ZoomEye 空间测绘' },
+    { value: 'daydaymap', label: 'DayDayMap 空间测绘' },
+    { value: 'hunter', label: 'Hunter 空间测绘' }
   ]
   if (s.github?.enabled !== false) sources.push({ value: 'github', label: 'GitHub 代码检索' })
   if (s.ozone?.enabled !== false) sources.push({ value: 'ozone', label: '零零信安 空间测绘' })
   if (s.zoomeye?.enabled !== false) sources.push({ value: 'zoomeye', label: 'ZoomEye 空间测绘' })
+  if (s.daydaymap?.enabled !== false) sources.push({ value: 'daydaymap', label: 'DayDayMap 空间测绘' })
+  if (s.hunter?.enabled !== false) sources.push({ value: 'hunter', label: 'Hunter 空间测绘' })
   return sources
 })
 
@@ -184,14 +216,12 @@ const formState = reactive({
   currentId: null
 })
 
-// 从全局设置获取 searchDepth 默认值
-let globalSearchDepth = 5
-
 const getDefaultFormData = () => ({
   name: '',
   templateId: '',
-  dataSource: 'github',
-  searchDepth: globalSearchDepth,
+  dataSources: [],
+  dataSource: '',
+  searchDepth: 30,
   enabled: true
 })
 
@@ -227,11 +257,13 @@ const openForm = (editTarget = null) => {
   if (editTarget) {
     formState.isEdit = true
     formState.currentId = editTarget.id
+    const rawDs = editTarget.dataSource || ''
     Object.assign(formData, {
       name: editTarget.name,
       templateId: editTarget.templateId,
-      dataSource: editTarget.dataSource,
-      searchDepth: editTarget.searchDepth,
+      dataSources: rawDs ? rawDs.split(',').filter(Boolean) : [],
+      dataSource: rawDs,
+      searchDepth: editTarget.searchDepth || 30,
       enabled: editTarget.enabled
     })
   } else {
@@ -248,15 +280,20 @@ const closeForm = () => {
 
 const handleSubmit = async () => {
   if (!formData.name?.trim()) { toast.error('配置名称不能为空'); return }
-  if (!formData.dataSource) { toast.error('请选择数据源'); return }
   if (!formData.templateId) { toast.error('请选择配置模板'); return }
-  if (formData.dataSource === 'github' && (!formData.searchDepth || formData.searchDepth < 1 || formData.searchDepth > 30)) { toast.error('GitHub 搜索深度必须在 1-30 之间'); return }
+  if ((formData.dataSources.length === 0 || formData.dataSources.includes('github')) && (!formData.searchDepth || formData.searchDepth < 1 || formData.searchDepth > 30)) { toast.error('GitHub 搜索深度必须在 1-30 之间'); return }
+
+  const payload = {
+    ...formData,
+    dataSource: formData.dataSources.join(','),
+  }
+  delete payload.dataSources
 
   try {
     if (formState.isEdit) {
-      await request.put(`/configs/${formState.currentId}`, formData)
+      await request.put(`/configs/${formState.currentId}`, payload)
     } else {
-      await request.post('/configs', formData)
+      await request.post('/configs', payload)
     }
     await scanConfigStore.refresh()
     closeForm()
@@ -280,8 +317,7 @@ const handleDelete = async (id) => {
 }
 
 onMounted(async () => {
-  const settings = await settingsStore.fetch()
-  globalSearchDepth = settings.github?.searchDepth || 5
+  await settingsStore.fetch()
 
   await scanConfigStore.startPolling()
   await scanConfigStore.fetch()
@@ -496,6 +532,44 @@ onUnmounted(() => {
   background-repeat: no-repeat; background-position: right 14px center;
 }
 .drawer-form input::placeholder { color: var(--text-disabled); }
+
+.source-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-input);
+  background: var(--bg-neutral);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s ease;
+  border: 1.5px solid transparent;
+}
+.source-tag input { display: none; }
+.source-tag.active {
+  background: rgba(0, 122, 255, 0.12);
+  color: var(--color-blue);
+  border-color: var(--color-blue);
+}
+.source-tag.all-tag.active {
+  background: var(--color-blue);
+  color: #fff;
+  border-color: var(--color-blue);
+}
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
 
 .form-buttons {
   display: grid; grid-template-columns: 1fr 2fr; gap: 12px;

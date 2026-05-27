@@ -1,41 +1,26 @@
 <template>
   <div class="page-container">
 
-    <div class="filter-sticky-bar">
-      <div class="filter-group">
-
-        <div class="select-wrapper">
-          <label class="select-label">地区</label>
-          <select v-model="filterForm.region" class="apple-select">
+    <div class="page-header">
+      <h1 class="page-title">组播源</h1>
+      <div class="header-right">
+        <div class="filter-counter-top">
+          <span>{{ filteredList.length }}</span> 个可用
+        </div>
+        <div class="header-filters">
+        <div class="select-wrapper-inline">
+          <select v-model="filterForm.region" class="apple-select-sm">
             <option value="">全部地区</option>
-            <option
-              v-for="opt in regions"
-              :key="opt"
-              :value="opt"
-            >
-              {{ opt }}
-            </option>
+            <option v-for="opt in regions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </div>
-
-        <div class="select-wrapper">
-          <label class="select-label">运营商</label>
-          <select v-model="filterForm.operator" class="apple-select">
+        <div class="select-wrapper-inline">
+          <select v-model="filterForm.operator" class="apple-select-sm">
             <option value="">全部网络</option>
-            <option
-              v-for="opt in operators"
-              :key="opt"
-              :value="opt"
-            >
-              {{ opt }}
-            </option>
+            <option v-for="opt in operators" :key="opt" :value="opt">{{ opt }}</option>
           </select>
         </div>
-
-      </div>
-
-      <div class="filter-counter">
-        已筛选出 <span>{{ filteredList.length }}</span> 个可用组播源
+        </div>
       </div>
     </div>
 
@@ -202,6 +187,7 @@ const handleTestDelay = async (item) => {
       toast.warning('超时或不可达')
     }
   } catch {
+    item.delay = -1
     toast.error('测试失败')
   }
 }
@@ -213,74 +199,73 @@ onMounted(() => {
 
 
 <style scoped>
-/* 筛选栏 */
-.filter-sticky-bar {
+/* 页面顶部 */
+.page-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(245, 245, 247, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  width: 100%;
-  max-width: 100vw;
-  border-radius: 0;
   padding: 12px 16px;
-  margin-bottom: 0;
-  box-shadow: var(--shadow-sm);
-  border: none;
-}
-.header-spacer {
-  height: 90px;
-  flex-shrink: 0;
-}
-.filter-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.select-wrapper {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100vw;
 }
-.select-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding-left: 4px;
-  text-transform: uppercase;
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
 }
-.apple-select {
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.filter-counter-top {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.filter-counter-top span {
+  color: var(--color-green);
+  font-weight: 700;
+}
+.header-filters {
+  display: flex;
+  gap: 8px;
+}
+.apple-select-sm {
   appearance: none;
   -webkit-appearance: none;
   background-color: var(--bg-neutral);
   color: var(--text-primary);
   border: none;
-  padding: 10px 14px;
+  padding: 6px 28px 6px 10px;
   border-radius: var(--radius-input);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
-  transition: background-color 0.2s ease;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%238E8E93' d='M0 0h10L5 6z'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 14px center;
+  background-position: right 10px center;
 }
-.apple-select:active {
+.apple-select-sm:active {
   background-color: #E8E8ED;
 }
-.filter-counter {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-}
-.filter-counter span {
-  color: var(--color-blue);
-  font-weight: 700;
+
+/* 筛选栏 */
+.header-spacer {
+  height: 56px;
+  flex-shrink: 0;
 }
 
 /* 列表 */
@@ -290,7 +275,7 @@ onMounted(() => {
   gap: 14px;
   width: 100%;
   max-width: var(--max-content);
-  padding-bottom: 40px;
+  padding-bottom: 90px;
 }
 
 /* 骨架屏 */

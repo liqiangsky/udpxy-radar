@@ -1,0 +1,7 @@
+name = "udpxy-radar"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+# Pages Functions 目录（默认就是 functions/）
+# [vars]
+# BACKEND_URL = ""

@@ -36,31 +36,6 @@
           </div>
           <p class="field-desc">用于解除 GitHub API 速率限制，提高组播源检索成功率。</p>
         </div>
-
-        <div class="form-group">
-          <label>GitHub 搜索深度 (页数)</label>
-          <div class="input-with-unit">
-            <input
-              v-model.number="settings.github.searchDepth"
-              type="number"
-              min="1"
-              max="30"
-            />
-            <span class="unit-text">页</span>
-          </div>
-          <p class="field-desc">每次执行检索爬取的最大结果页数限制。</p>
-        </div>
-
-        <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.github.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。</p>
-        </div>
       </div>
 
       <!-- 零零信安 数据源 -->
@@ -86,17 +61,6 @@
         </div>
 
         <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.ozone.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">使用 零零信安 缓存数据进行扫描的定时任务。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
           <label>手动拉取测试</label>
           <button
             class="fetch-btn-mini"
@@ -115,7 +79,7 @@
       <div class="settings-card">
         <div class="card-title-group">
           <span class="material-symbols-outlined card-icon">radar</span>
-          <h2>ZoomEye 网络空间测绘</h2>
+          <h2>ZoomEye 空间测绘</h2>
           <label class="toggle-switch">
             <input type="checkbox" v-model="settings.zoomeye.enabled" />
             <span class="slider"></span>
@@ -145,6 +109,93 @@
           </button>
           <p class="field-desc" v-show="zoomeyeResult">已触发，等待 GitHub Action 回调推送</p>
           <p class="field-desc">未登录账号只能查看第一页结果。</p>
+        </div>
+      </div>
+
+      <!-- DayDayMap 数据源 -->
+      <div class="settings-card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">map</span>
+          <h2>DayDayMap 空间测绘</h2>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="settings.daydaymap.enabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>定时拉取 (Cron)</label>
+          <input
+            v-model="settings.daydaymap.fetchCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">从 DayDayMap 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
+          <label>手动拉取测试</label>
+          <button
+            class="fetch-btn-mini"
+            :class="{ fetching: daydaymapFetching }"
+            @click="handleDaydaymapManualFetch"
+          >
+            <span class="material-symbols-outlined fetch-icon" :class="{ spin: daydaymapFetching }">cloud_download</span>
+            <span>{{ daydaymapFetching ? '拉取中' : '拉取 DayDayMap 源数据' }}</span>
+          </button>
+          <p class="field-desc" v-if="daydaymapResult">获取到 {{ daydaymapResult }} 条数据，已写入 source_cache</p>
+          <p class="field-desc">固定搜索词: product="Udpxy Web Module"，未登录只能查看第一页结果。</p>
+        </div>
+      </div>
+
+      <!-- Hunter 数据源 -->
+      <div class="settings-card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">radar</span>
+          <h2>Hunter 空间测绘</h2>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="settings.hunter.enabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>API Key</label>
+          <div class="input-with-icon">
+            <span class="material-symbols-outlined input-prefix">key</span>
+            <input
+              v-model="settings.hunter.apiKey"
+              type="password"
+              placeholder="hunter API Key"
+            />
+          </div>
+          <p class="field-desc">奇安信 Hunter API Key，用于解除速率限制。</p>
+        </div>
+
+        <div class="form-group">
+          <label>定时拉取 (Cron)</label>
+          <input
+            v-model="settings.hunter.fetchCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">从 Hunter 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
+          <label>手动拉取测试</label>
+          <button
+            class="fetch-btn-mini"
+            :class="{ fetching: hunterFetching }"
+            @click="handleHunterManualFetch"
+          >
+            <span class="material-symbols-outlined fetch-icon" :class="{ spin: hunterFetching }">cloud_download</span>
+            <span>{{ hunterFetching ? '拉取中' : '拉取 Hunter 源数据' }}</span>
+          </button>
+          <p class="field-desc" v-if="hunterResult">获取到 {{ hunterResult }} 条数据，已写入 source_cache</p>
+          <p class="field-desc">固定搜索词: header="Server: udpxy"&&ip.country=="中国"</p>
         </div>
       </div>
 
@@ -207,6 +258,17 @@
         </div>
 
         <div class="form-group">
+          <label>定时扫描 (Cron)</label>
+          <input
+            v-model="settings.scheduling.scanCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。统一调度所有数据源扫描。</p>
+        </div>
+
+        <div class="form-group">
           <label>定时复测 (Cron)</label>
           <input
             v-model="settings.scheduling.janitorCron"
@@ -248,6 +310,25 @@
         </div>
       </div>
 
+      <!-- 安全认证 -->
+      <div class="settings-card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">lock</span>
+          <h2>安全认证</h2>
+        </div>
+
+        <div class="form-group">
+          <label>API 认证 Token</label>
+          <input
+            v-model="settings.security.callbackToken"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不启用认证"
+          />
+          <p class="field-desc">设置后，所有写操作需携带 X-Callback-Token 请求头。CF Worker 和 GitHub Action 需同步配置。</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -281,11 +362,14 @@ const handleManualFetch = async () => {
 }
 
 const settings = reactive({
-  github: { enabled: true, token: '', searchDepth: 5, scanCron: '' },
-  ozone: { enabled: false, fetchCron: '', scanCron: '' },
+  github: { enabled: true, token: '' },
+  ozone: { enabled: false, fetchCron: '' },
   zoomeye: { enabled: false, fetchCron: '' },
+  daydaymap: { enabled: false, fetchCron: '' },
+  hunter: { enabled: false, apiKey: '', fetchCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
-  scheduling: { janitorCron: '' }
+  scheduling: { scanCron: '', janitorCron: '' },
+  security: { callbackToken: '' }
 })
 
 const saving = ref(false)
@@ -295,8 +379,11 @@ const loadSettings = async () => {
   if (res.github) Object.assign(settings.github, res.github)
   if (res.ozone) Object.assign(settings.ozone, res.ozone)
   if (res.zoomeye) Object.assign(settings.zoomeye, res.zoomeye)
+  if (res.daydaymap) Object.assign(settings.daydaymap, res.daydaymap)
+  if (res.hunter) Object.assign(settings.hunter, res.hunter)
   if (res.engine) Object.assign(settings.engine, res.engine)
   if (res.scheduling) Object.assign(settings.scheduling, res.scheduling)
+  if (res.security) Object.assign(settings.security, res.security)
 }
 
 const zoomeyeFetching = ref(false)
@@ -319,23 +406,67 @@ const handleZoomeyeManualFetch = async () => {
   }
 }
 
+const daydaymapFetching = ref(false)
+const daydaymapResult = ref(0)
+
+const hunterFetching = ref(false)
+const hunterResult = ref(0)
+
+const handleHunterManualFetch = async () => {
+  if (!settings.hunter.enabled) {
+    toast.warning('请先启用 Hunter 数据源')
+    return
+  }
+  hunterFetching.value = true
+  try {
+    const res = await request.post('/hunter/fetch')
+    hunterResult.value = res.fetched
+    toast.success(`拉取成功：获取到 ${res.fetched} 条数据`)
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '拉取失败')
+  } finally {
+    hunterFetching.value = false
+  }
+}
+
+const handleDaydaymapManualFetch = async () => {
+  if (!settings.daydaymap.enabled) {
+    toast.warning('请先启用 DayDayMap 数据源')
+    return
+  }
+  daydaymapFetching.value = true
+  try {
+    const res = await request.post('/daydaymap/fetch')
+    daydaymapResult.value = res.fetched
+    toast.success(`拉取成功：获取到 ${res.fetched} 条数据`)
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '拉取失败')
+  } finally {
+    daydaymapFetching.value = false
+  }
+}
+
 const handleSave = async () => {
   saving.value = true
   try {
     const payload = {
       githubEnabled: settings.github.enabled,
       githubToken: settings.github.token,
-      githubSearchDepth: settings.github.searchDepth,
-      githubScanCron: settings.github.scanCron,
       ozoneEnabled: settings.ozone.enabled,
       ozoneFetchCron: settings.ozone.fetchCron,
-      ozoneScanCron: settings.ozone.scanCron,
       zoomeyeEnabled: settings.zoomeye.enabled,
       zoomeyeFetchCron: settings.zoomeye.fetchCron,
+      daydaymapEnabled: settings.daydaymap.enabled,
+      daydaymapFetchCron: settings.daydaymap.fetchCron,
+      hunterEnabled: settings.hunter.enabled,
+      hunterApiKey: settings.hunter.apiKey,
+      hunterFetchCron: settings.hunter.fetchCron,
       concurrency: settings.engine.concurrency,
       timeout: settings.engine.timeout,
       configDelay: settings.engine.configDelay,
-      janitorCron: settings.scheduling.janitorCron
+      scanCron: settings.scheduling.scanCron,
+      janitorCron: settings.scheduling.janitorCron,
+      callbackToken: settings.security.callbackToken
     }
     await settingsStore.update(payload)
     toast.success('设置已保存')

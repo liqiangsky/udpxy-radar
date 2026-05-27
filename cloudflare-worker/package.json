@@ -1,0 +1,11 @@
+{
+  "name": "udpxy-radar-heartbeat",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4.86.0"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}

@@ -12,14 +12,24 @@ router = APIRouter()
 
 
 def _check_data_source_enabled(ds: str):
-    if ds == "github" and get_setting("github_enabled", "1") != "1":
-        raise HTTPException(400, "GitHub 数据源未启用")
-    if ds == "ozone" and get_setting("ozone_enabled", "0") != "1":
-        raise HTTPException(400, "零零信安 数据源未启用")
-    if ds == "zoomeye" and get_setting("zoomeye_enabled", "0") != "1":
-        raise HTTPException(400, "ZoomEye 数据源未启用")
-    if ds not in ("github", "ozone", "zoomeye"):
-        raise HTTPException(400, f"不支持的数据源: {ds}")
+    if not ds:
+        return
+    for name in ds.split(','):
+        name = name.strip()
+        if not name:
+            continue
+        if name == "github" and get_setting("github_enabled", "1") != "1":
+            raise HTTPException(400, "GitHub 数据源未启用")
+        if name == "ozone" and get_setting("ozone_enabled", "0") != "1":
+            raise HTTPException(400, "零零信安 数据源未启用")
+        if name == "zoomeye" and get_setting("zoomeye_enabled", "0") != "1":
+            raise HTTPException(400, "ZoomEye 数据源未启用")
+        if name == "daydaymap" and get_setting("daydaymap_enabled", "0") != "1":
+            raise HTTPException(400, "DayDayMap 数据源未启用")
+        if name == "hunter" and get_setting("hunter_enabled", "0") != "1":
+            raise HTTPException(400, "Hunter 数据源未启用")
+        if name not in ("github", "ozone", "zoomeye", "daydaymap", "hunter"):
+            raise HTTPException(400, f"不支持的数据源: {name}")
 
 @router.get("/configs")
 def api_list_configs():
@@ -162,13 +172,54 @@ async def api_manual_zoomeye_fetch():
     return {"ok": True, "message": "已触发，等待 Action 回调推送"}
 
 
+@router.post("/daydaymap/fetch")
+async def api_manual_daydaymap_fetch():
+    """
+    手动触发 DayDayMap 数据拉取
+    """
+    from services.daydaymap import fetch_daydaymap_sources
+    from services.source_cache import cache_sources
+
+    sources = await fetch_daydaymap_sources()
+    if sources:
+        cache_sources("daydaymap", sources)
+
+    return {
+        "ok": True,
+        "fetched": len(sources),
+        "hosts": [s["host"] for s in sources]
+    }
+
+
+@router.post("/hunter/fetch")
+async def api_manual_hunter_fetch():
+    """
+    手动触发 Hunter 数据拉取（HF Spaces 直接请求，海外 IP 暂被 Hunter 拦截）
+    """
+    from services.hunter import fetch_hunter_sources
+    from services.source_cache import cache_sources
+
+    sources = await fetch_hunter_sources()
+    if sources:
+        cache_sources("hunter", sources)
+
+    return {
+        "ok": True,
+        "fetched": len(sources),
+        "hosts": [s["host"] for s in sources]
+    }
+
+
 @router.post("/source/push")
 async def api_source_push(request: Request):
     """
     GitHub Action 完成数据拉取后，推送清洗后的 host 列表到此接口
     支持任意数据源类型（zoomeye / ozone / custom）
+    自动对缺少 geo 信息的 host 进行 geoip 富化
     """
+    import aiohttp
     from services.source_cache import cache_sources
+    from services.geoip import enrich_geo_batch
 
     token = request.headers.get("X-Callback-Token", "")
     expected_token = get_setting("callback_token", "")
@@ -181,14 +232,20 @@ async def api_source_push(request: Request):
 
     logger.info(f"📥 [数据源推送] sourceType={source_type}, hosts={len(hosts)}")
 
+    # geoip 富化
+    async with aiohttp.ClientSession() as session:
+        enriched = await enrich_geo_batch(session, hosts)
+
+    logger.info(f"📄 [{source_type}] 推送 {len(enriched)} 条数据，已写入 source_cache")
+
     # 去重后入库
-    cache_sources(source_type, hosts)
+    cache_sources(source_type, enriched)
 
     return {
         "ok": True,
         "sourceType": source_type,
-        "fetched": len(hosts),
-        "hosts": [h["host"] for h in hosts]
+        "fetched": len(enriched),
+        "hosts": [h["host"] for h in enriched]
     }
 
 

@@ -4,18 +4,21 @@ from typing import Optional
 class GlobalSettingsUpdate(BaseModel):
     githubEnabled: bool = True
     githubToken: str = ""
-    githubSearchDepth: int = Field(5, ge=1, le=30)
-    githubScanCron: str = ""
     ozoneEnabled: bool = True
     ozoneFetchCron: str = ""
-    ozoneScanCron: str = ""
     concurrency: int = Field(64, ge=1, le=500)
     timeout: int = Field(2000, ge=200, le=10000)
     configDelay: int = Field(3, ge=0, le=60)
+    scanCron: str = ""
     janitorCron: str = ""
-    # zoomeye 配置
+    callbackToken: str = ""
     zoomeyeEnabled: bool = True
     zoomeyeFetchCron: str = ""
+    daydaymapEnabled: bool = True
+    daydaymapFetchCron: str = ""
+    hunterEnabled: bool = True
+    hunterApiKey: str = ""
+    hunterFetchCron: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

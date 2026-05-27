@@ -21,7 +21,7 @@
 
       <div class="grid-item">
         <span class="badge-lbl">延迟</span>
-        <div class="delay-interactive-badge" @click.stop="$emit('test', item)">
+        <div class="delay-interactive-badge" :class="{ 'state-error': item.delay < 0 }" @click.stop="$emit('test', item)">
           <span class="material-symbols-outlined icon-g">bolt</span>
           <span class="badge-txt font-mono">{{ item.delay }} ms</span>
         </div>
@@ -30,7 +30,7 @@
       <div class="grid-item">
         <span class="badge-lbl">来源</span>
         <span class="source-badge">
-          <img :src="item.sourceType === 'ozone' ? sourceLogo0zone : item.sourceType === 'zoomeye' ? sourceLogoZoomeye : sourceLogoGithub" class="source-logo" />
+          <img :src="getItemSourceImg(item.sourceType)" class="source-logo" />
           <span class="badge-txt">{{ item.sourceName }}</span>
         </span>
       </div>
@@ -49,8 +49,9 @@
 
 <script setup>
 import sourceLogoGithub from '@/assets/github.png'
-import sourceLogo0zone from '@/assets/零零信安.png'
-import sourceLogoZoomeye from '@/assets/zoomeye.png'
+import sourceLogo0zone from '@/assets/zero_zone.png'
+import sourceLogoZoomEye from '@/assets/zoomeye.png'
+import sourceLogoDayDayMap from '@/assets/daydaymap.svg'
 
 defineProps({
   item: {
@@ -59,6 +60,15 @@ defineProps({
   }
 })
 defineEmits(['copy', 'test'])
+
+const getItemSourceImg = (sourceType) => {
+  return {
+    'ozone': sourceLogo0zone,
+    'github': sourceLogoGithub,
+    'zoomeye': sourceLogoZoomEye,
+    'daydaymap': sourceLogoDayDayMap,
+  }[sourceType]
+}
 </script>
 
 <style scoped>
@@ -179,5 +189,10 @@ defineEmits(['copy', 'test'])
 }
 .copy-btn .icon-g { color: var(--text-muted); }
 .delay-interactive-badge .icon-g { color: var(--color-green); }
+.delay-interactive-badge.state-error {
+  background: #fdecea;
+  color: #e5484d;
+}
+.delay-interactive-badge.state-error .icon-g { color: #e5484d; }
 .time-wrapper .icon-g { color: var(--text-muted); }
 </style>
