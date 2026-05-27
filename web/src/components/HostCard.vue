@@ -21,7 +21,7 @@
 
       <div class="grid-item">
         <span class="badge-lbl">延迟</span>
-        <div class="delay-interactive-badge" @click.stop="$emit('test', item)">
+        <div class="delay-interactive-badge" :class="{ 'state-error': item.delay < 0 }" @click.stop="$emit('test', item)">
           <span class="material-symbols-outlined icon-g">bolt</span>
           <span class="badge-txt font-mono">{{ item.delay }} ms</span>
         </div>
@@ -189,5 +189,10 @@ const getItemSourceImg = (sourceType) => {
 }
 .copy-btn .icon-g { color: var(--text-muted); }
 .delay-interactive-badge .icon-g { color: var(--color-green); }
+.delay-interactive-badge.state-error {
+  background: #fdecea;
+  color: #e5484d;
+}
+.delay-interactive-badge.state-error .icon-g { color: #e5484d; }
 .time-wrapper .icon-g { color: var(--text-muted); }
 </style>

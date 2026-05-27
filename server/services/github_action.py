@@ -44,7 +44,7 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye") ->
     }
 
     dispatch_payload = {
-        "ref": "feature-20260525",
+        "ref": "master",
         "inputs": {
             "source_url": source_url,
             "source_type": source_type,
