@@ -11,6 +11,10 @@ export const useSettingsStore = defineStore('settings', () => {
     const res = await request.get('/settings')
     data.value = res
     loaded.value = true
+    // 同步 token 到 localStorage，供请求拦截器使用
+    if (res?.security?.callbackToken) {
+      localStorage.setItem('callback_token', res.security.callbackToken)
+    }
     return res
   }
 
@@ -37,7 +41,10 @@ export const useSettingsStore = defineStore('settings', () => {
     if (payload.timeout !== undefined) data.value.engine.timeout = payload.timeout
     if (payload.configDelay !== undefined) data.value.engine.configDelay = payload.configDelay
     if (payload.janitorCron !== undefined) data.value.scheduling.janitorCron = payload.janitorCron
-    if (payload.callbackToken !== undefined) data.value.security.callbackToken = payload.callbackToken
+    if (payload.callbackToken !== undefined) {
+      data.value.security.callbackToken = payload.callbackToken
+      localStorage.setItem('callback_token', payload.callbackToken)
+    }
     return data.value
   }
 
