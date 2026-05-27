@@ -37,3 +37,6 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Cross-platform lock file causes CF Pages npm ci to miss Linux native modules
+package-lock.json
