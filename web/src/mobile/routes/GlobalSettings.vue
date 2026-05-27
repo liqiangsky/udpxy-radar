@@ -38,167 +38,6 @@
         </div>
       </div>
 
-      <!-- 零零信安 数据源 -->
-      <div class="settings-card">
-        <div class="card-title-group">
-          <span class="material-symbols-outlined card-icon">public</span>
-          <h2>零零信安 空间测绘</h2>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="settings.ozone.enabled" />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label>定时拉取 (Cron)</label>
-          <input
-            v-model="settings.ozone.fetchCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">从 零零信安 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>手动拉取测试</label>
-          <button
-            class="fetch-btn-mini"
-            :class="{ fetching: fetching }"
-            @click="handleManualFetch"
-          >
-            <span class="material-symbols-outlined fetch-icon" :class="{ spin: fetching }">cloud_download</span>
-            <span>{{ fetching ? '拉取中' : '拉取 零零信安 源数据' }}</span>
-          </button>
-          <p class="field-desc" v-if="ozoneResult">获取到 {{ ozoneResult }} 条数据，已写入 source_cache</p>
-          <p class="field-desc">固定搜索词: udpxy multicast UDP-to-HTTP</p>
-        </div>
-      </div>
-
-      <!-- zoomeye 数据源 -->
-      <div class="settings-card">
-        <div class="card-title-group">
-          <span class="material-symbols-outlined card-icon">radar</span>
-          <h2>ZoomEye 空间测绘</h2>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="settings.zoomeye.enabled" />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label>定时拉取 (Cron)</label>
-          <input
-            v-model="settings.zoomeye.fetchCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">触发 GitHub Action 的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>手动拉取测试</label>
-          <button
-            class="fetch-btn-mini"
-            :class="{ fetching: zoomeyeFetching }"
-            @click="handleZoomeyeManualFetch"
-          >
-            <span class="material-symbols-outlined fetch-icon" :class="{ spin: zoomeyeFetching }">cloud_download</span>
-            <span>{{ zoomeyeFetching ? '触发中' : '触发 ZoomEye 数据拉取' }}</span>
-          </button>
-          <p class="field-desc" v-show="zoomeyeResult">已触发，等待 GitHub Action 回调推送</p>
-          <p class="field-desc">未登录账号只能查看第一页结果。</p>
-        </div>
-      </div>
-
-      <!-- DayDayMap 数据源 -->
-      <div class="settings-card">
-        <div class="card-title-group">
-          <span class="material-symbols-outlined card-icon">map</span>
-          <h2>DayDayMap 空间测绘</h2>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="settings.daydaymap.enabled" />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label>定时拉取 (Cron)</label>
-          <input
-            v-model="settings.daydaymap.fetchCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">从 DayDayMap 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>手动拉取测试</label>
-          <button
-            class="fetch-btn-mini"
-            :class="{ fetching: daydaymapFetching }"
-            @click="handleDaydaymapManualFetch"
-          >
-            <span class="material-symbols-outlined fetch-icon" :class="{ spin: daydaymapFetching }">cloud_download</span>
-            <span>{{ daydaymapFetching ? '拉取中' : '拉取 DayDayMap 源数据' }}</span>
-          </button>
-          <p class="field-desc" v-if="daydaymapResult">获取到 {{ daydaymapResult }} 条数据，已写入 source_cache</p>
-          <p class="field-desc">固定搜索词: product="Udpxy Web Module"，未登录只能查看第一页结果。</p>
-        </div>
-      </div>
-
-      <!-- Hunter 数据源 -->
-      <div class="settings-card">
-        <div class="card-title-group">
-          <span class="material-symbols-outlined card-icon">radar</span>
-          <h2>Hunter 空间测绘</h2>
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="settings.hunter.enabled" />
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label>API Key</label>
-          <div class="input-with-icon">
-            <span class="material-symbols-outlined input-prefix">key</span>
-            <input
-              v-model="settings.hunter.apiKey"
-              type="password"
-              placeholder="hunter API Key"
-            />
-          </div>
-          <p class="field-desc">奇安信 Hunter API Key，用于解除速率限制。</p>
-        </div>
-
-        <div class="form-group">
-          <label>定时拉取 (Cron)</label>
-          <input
-            v-model="settings.hunter.fetchCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">从 Hunter 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>手动拉取测试</label>
-          <button
-            class="fetch-btn-mini"
-            :class="{ fetching: hunterFetching }"
-            @click="handleHunterManualFetch"
-          >
-            <span class="material-symbols-outlined fetch-icon" :class="{ spin: hunterFetching }">cloud_download</span>
-            <span>{{ hunterFetching ? '拉取中' : '拉取 Hunter 源数据' }}</span>
-          </button>
-          <p class="field-desc" v-if="hunterResult">获取到 {{ hunterResult }} 条数据，已写入 source_cache</p>
-          <p class="field-desc">固定搜索词: header="Server: udpxy"&&ip.country=="中国"</p>
-        </div>
-      </div>
-
       <!-- 扫描引擎参数 -->
       <div class="settings-card">
         <div class="card-title-group">
@@ -277,6 +116,87 @@
             placeholder="留空表示不执行"
           />
           <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。</p>
+        </div>
+
+        <!-- 数据源拉取 Cron 集中管理 -->
+        <div class="form-group">
+          <label>0.zone 定时拉取</label>
+          <div class="fetch-inline">
+            <input
+              v-model="settings.ozone.fetchCron"
+              type="text"
+              class="input-base fetch-cron-input"
+              placeholder="留空表示不执行"
+            />
+            <button
+              class="fetch-btn-mini"
+              :class="{ fetching: fetching }"
+              @click="handleManualFetch"
+            >
+              <span class="material-symbols-outlined fetch-icon" :class="{ spin: fetching }">cloud_download</span>
+            </button>
+          </div>
+          <p class="field-desc" v-if="ozoneResult">获取到 {{ ozoneResult }} 条数据</p>
+        </div>
+
+        <div class="form-group">
+          <label>ZoomEye 定时拉取</label>
+          <div class="fetch-inline">
+            <input
+              v-model="settings.zoomeye.fetchCron"
+              type="text"
+              class="input-base fetch-cron-input"
+              placeholder="留空表示不执行"
+            />
+            <button
+              class="fetch-btn-mini"
+              :class="{ fetching: zoomeyeFetching }"
+              @click="handleZoomeyeManualFetch"
+            >
+              <span class="material-symbols-outlined fetch-icon" :class="{ spin: zoomeyeFetching }">cloud_download</span>
+            </button>
+          </div>
+          <p class="field-desc" v-show="zoomeyeResult">已触发，等待 GitHub Action 回调</p>
+        </div>
+
+        <div class="form-group">
+          <label>DayDayMap 定时拉取</label>
+          <div class="fetch-inline">
+            <input
+              v-model="settings.daydaymap.fetchCron"
+              type="text"
+              class="input-base fetch-cron-input"
+              placeholder="留空表示不执行"
+            />
+            <button
+              class="fetch-btn-mini"
+              :class="{ fetching: daydaymapFetching }"
+              @click="handleDaydaymapManualFetch"
+            >
+              <span class="material-symbols-outlined fetch-icon" :class="{ spin: daydaymapFetching }">cloud_download</span>
+            </button>
+          </div>
+          <p class="field-desc" v-if="daydaymapResult">获取到 {{ daydaymapResult }} 条数据</p>
+        </div>
+
+        <div class="form-group">
+          <label>Hunter 定时拉取</label>
+          <div class="fetch-inline">
+            <input
+              v-model="settings.hunter.fetchCron"
+              type="text"
+              class="input-base fetch-cron-input"
+              placeholder="留空表示不执行"
+            />
+            <button
+              class="fetch-btn-mini"
+              :class="{ fetching: hunterFetching }"
+              @click="handleHunterManualFetch"
+            >
+              <span class="material-symbols-outlined fetch-icon" :class="{ spin: hunterFetching }">cloud_download</span>
+            </button>
+          </div>
+          <p class="field-desc" v-if="hunterResult">获取到 {{ hunterResult }} 条数据</p>
         </div>
 
         <div class="cron-help">
@@ -696,4 +616,11 @@ input:checked + .slider:before { transform: translateX(18px); }
   border-bottom: 1px solid #E8E8ED;
 }
 .help-content td:first-child { font-weight: 600; color: var(--text-primary); }
+
+.fetch-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fetch-cron-input { flex: 1; }
 </style>
