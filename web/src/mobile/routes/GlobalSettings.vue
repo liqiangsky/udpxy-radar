@@ -36,17 +36,6 @@
           </div>
           <p class="field-desc">用于解除 GitHub API 速率限制，提高组播源检索成功率。</p>
         </div>
-
-        <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.github.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。</p>
-        </div>
       </div>
 
       <!-- 零零信安 数据源 -->
@@ -69,17 +58,6 @@
             placeholder="留空表示不执行"
           />
           <p class="field-desc">从 零零信安 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.ozone.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">使用 零零信安 缓存数据进行扫描的定时任务。留空不执行。</p>
         </div>
 
         <div class="form-group">
@@ -120,17 +98,6 @@
         </div>
 
         <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.zoomeye.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">使用 ZoomEye 缓存数据进行扫描的定时任务。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
           <label>手动拉取测试</label>
           <button
             class="fetch-btn-mini"
@@ -165,17 +132,6 @@
             placeholder="留空表示不执行"
           />
           <p class="field-desc">从 DayDayMap 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.daydaymap.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">使用 DayDayMap 缓存数据进行扫描的定时任务。留空不执行。</p>
         </div>
 
         <div class="form-group">
@@ -226,17 +182,6 @@
             placeholder="留空表示不执行"
           />
           <p class="field-desc">从 Hunter 拉取数据的定时任务 Cron 表达式。留空不执行。</p>
-        </div>
-
-        <div class="form-group">
-          <label>定时扫描 (Cron)</label>
-          <input
-            v-model="settings.hunter.scanCron"
-            type="text"
-            class="input-base"
-            placeholder="留空表示不执行"
-          />
-          <p class="field-desc">使用 Hunter 缓存数据进行扫描的定时任务。留空不执行。</p>
         </div>
 
         <div class="form-group">
@@ -310,6 +255,17 @@
         <div class="card-title-group">
           <span class="material-symbols-outlined card-icon">schedule</span>
           <h2>自动化调度</h2>
+        </div>
+
+        <div class="form-group">
+          <label>定时扫描 (Cron)</label>
+          <input
+            v-model="settings.scheduling.scanCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。统一调度所有数据源扫描。</p>
         </div>
 
         <div class="form-group">
@@ -406,13 +362,13 @@ const handleManualFetch = async () => {
 }
 
 const settings = reactive({
-  github: { enabled: true, token: '', scanCron: '' },
-  ozone: { enabled: false, fetchCron: '', scanCron: '' },
-  zoomeye: { enabled: false, fetchCron: '', scanCron: '' },
-  daydaymap: { enabled: false, fetchCron: '', scanCron: '' },
-  hunter: { enabled: false, apiKey: '', fetchCron: '', scanCron: '' },
+  github: { enabled: true, token: '' },
+  ozone: { enabled: false, fetchCron: '' },
+  zoomeye: { enabled: false, fetchCron: '' },
+  daydaymap: { enabled: false, fetchCron: '' },
+  hunter: { enabled: false, apiKey: '', fetchCron: '' },
   engine: { concurrency: 64, timeout: 2000, configDelay: 3 },
-  scheduling: { janitorCron: '' },
+  scheduling: { scanCron: '', janitorCron: '' },
   security: { callbackToken: '' }
 })
 
@@ -496,23 +452,19 @@ const handleSave = async () => {
     const payload = {
       githubEnabled: settings.github.enabled,
       githubToken: settings.github.token,
-      githubScanCron: settings.github.scanCron,
       ozoneEnabled: settings.ozone.enabled,
       ozoneFetchCron: settings.ozone.fetchCron,
-      ozoneScanCron: settings.ozone.scanCron,
       zoomeyeEnabled: settings.zoomeye.enabled,
       zoomeyeFetchCron: settings.zoomeye.fetchCron,
-      zoomeyeScanCron: settings.zoomeye.scanCron,
       daydaymapEnabled: settings.daydaymap.enabled,
       daydaymapFetchCron: settings.daydaymap.fetchCron,
-      daydaymapScanCron: settings.daydaymap.scanCron,
       hunterEnabled: settings.hunter.enabled,
       hunterApiKey: settings.hunter.apiKey,
       hunterFetchCron: settings.hunter.fetchCron,
-      hunterScanCron: settings.hunter.scanCron,
       concurrency: settings.engine.concurrency,
       timeout: settings.engine.timeout,
       configDelay: settings.engine.configDelay,
+      scanCron: settings.scheduling.scanCron,
       janitorCron: settings.scheduling.janitorCron,
       callbackToken: settings.security.callbackToken
     }

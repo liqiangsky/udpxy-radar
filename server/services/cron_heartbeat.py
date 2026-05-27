@@ -73,41 +73,15 @@ async def handle_heartbeat() -> dict:
 
     triggered = []
 
-    # 收集所有待扫描配置，合并为一次触发（避免多线程竞争 task_runner）
-    all_scan_ids = []
-
-    # 通用扫描
+    # 通用扫描 cron（所有数据源统一走这一个入口）
     scan_cron = get_setting("scan_cron", "")
     if cron_match(scan_cron, cron_now) and _should_exec("scan", now):
         with get_db() as conn:
-            rows = conn.execute("SELECT id FROM scan_config WHERE enabled=1 AND (dataSource='github' OR dataSource NOT IN ('ozone','zoomeye','daydaymap','hunter'))").fetchall()
+            rows = conn.execute("SELECT id FROM scan_config WHERE enabled=1").fetchall()
         if rows:
-            all_scan_ids.extend([r["id"] for r in rows])
-            triggered.append({"task": "scan", "config_ids": [r["id"] for r in rows]})
-
-    # 各专属数据源扫描
-    for task_key, source_kw, label in [
-        ("ozone_scan", "ozone", "0.zone 定时扫描"),
-        ("zoomeye_scan", "zoomeye", "ZoomEye 定时扫描"),
-        ("daydaymap_scan", "daydaymap", "DayDayMap 定时扫描"),
-        ("hunter_scan", "hunter", "Hunter 定时扫描"),
-    ]:
-        cron_key = f"{source_kw}_scan_cron"
-        cron_val = get_setting(cron_key, "")
-        if cron_match(cron_val, cron_now) and _should_exec(task_key, now):
-            with get_db() as conn:
-                rows = conn.execute(
-                    f"SELECT id FROM scan_config WHERE dataSource LIKE '%{source_kw}%' AND enabled=1"
-                ).fetchall()
-            if rows:
-                all_scan_ids.extend([r["id"] for r in rows])
-                triggered.append({"task": task_key, "config_ids": [r["id"] for r in rows]})
-
-    # 合并触发一次扫描
-    if all_scan_ids:
-        unique_ids = list(dict.fromkeys(all_scan_ids))  # 保序去重
-        trigger_background_queue(unique_ids, skip_disabled=True)
-        logger.info(f"✅ [心跳合并扫描] 共 {len(unique_ids)} 个配置: {unique_ids}")
+            ids = [r["id"] for r in rows]
+            trigger_background_queue(ids, skip_disabled=True)
+            triggered.append({"task": "scan", "config_ids": ids})
 
     # 复测任务触发
     janitor_cron = get_setting("janitor_cron", "")
