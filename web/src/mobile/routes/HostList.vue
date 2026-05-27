@@ -1,6 +1,13 @@
 <template>
   <div class="page-container">
 
+    <div class="page-header">
+      <h1 class="page-title">组播源</h1>
+      <div class="filter-counter-top">
+        <span>{{ filteredList.length }}</span> 个可用
+      </div>
+    </div>
+
     <div class="filter-sticky-bar">
       <div class="filter-group">
 
@@ -213,14 +220,45 @@ onMounted(() => {
 
 
 <style scoped>
-/* 筛选栏 */
-.filter-sticky-bar {
+/* 页面顶部 */
+.page-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(245, 245, 247, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100vw;
+}
+.page-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.filter-counter-top {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.filter-counter-top span {
+  color: var(--color-green);
+  font-weight: 700;
+}
+
+/* 筛选栏 */
+.filter-sticky-bar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: rgba(245, 245, 247, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   width: 100%;
@@ -232,7 +270,7 @@ onMounted(() => {
   border: none;
 }
 .header-spacer {
-  height: 90px;
+  height: 150px;
   flex-shrink: 0;
 }
 .filter-group {
@@ -290,7 +328,7 @@ onMounted(() => {
   gap: 14px;
   width: 100%;
   max-width: var(--max-content);
-  padding-bottom: 40px;
+  padding-bottom: 90px;
 }
 
 /* 骨架屏 */
