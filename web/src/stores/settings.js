@@ -19,6 +19,10 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const update = async (payload) => {
+    // 先写入 localStorage，确保请求拦截器能拿到 token
+    if (payload.callbackToken !== undefined) {
+      localStorage.setItem('callback_token', payload.callbackToken)
+    }
     await request.put('/settings', payload)
     if (!data.value) return data.value
     if (payload.githubEnabled !== undefined) data.value.github.enabled = payload.githubEnabled
@@ -43,7 +47,6 @@ export const useSettingsStore = defineStore('settings', () => {
     if (payload.janitorCron !== undefined) data.value.scheduling.janitorCron = payload.janitorCron
     if (payload.callbackToken !== undefined) {
       data.value.security.callbackToken = payload.callbackToken
-      localStorage.setItem('callback_token', payload.callbackToken)
     }
     return data.value
   }
