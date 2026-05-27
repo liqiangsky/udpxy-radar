@@ -73,23 +73,41 @@ async def handle_heartbeat() -> dict:
 
     triggered = []
 
-    # 扫描任务触发
+    # 收集所有待扫描配置，合并为一次触发（避免多线程竞争 task_runner）
+    all_scan_ids = []
+
+    # 通用扫描
     scan_cron = get_setting("scan_cron", "")
     if cron_match(scan_cron, cron_now) and _should_exec("scan", now):
-        if task_runner.is_idle():
-            logger.info(f"⏰ [心跳触发] 定时扫描 -> cron: {scan_cron}")
+        with get_db() as conn:
+            rows = conn.execute("SELECT id FROM scan_config WHERE enabled=1 AND (dataSource='github' OR dataSource NOT IN ('ozone','zoomeye','daydaymap','hunter'))").fetchall()
+        if rows:
+            all_scan_ids.extend([r["id"] for r in rows])
+            triggered.append({"task": "scan", "config_ids": [r["id"] for r in rows]})
+
+    # 各专属数据源扫描
+    for task_key, source_kw, label in [
+        ("ozone_scan", "ozone", "0.zone 定时扫描"),
+        ("zoomeye_scan", "zoomeye", "ZoomEye 定时扫描"),
+        ("daydaymap_scan", "daydaymap", "DayDayMap 定时扫描"),
+        ("hunter_scan", "hunter", "Hunter 定时扫描"),
+    ]:
+        cron_key = f"{source_kw}_scan_cron"
+        cron_val = get_setting(cron_key, "")
+        if cron_match(cron_val, cron_now) and _should_exec(task_key, now):
             with get_db() as conn:
                 rows = conn.execute(
-                    "SELECT id FROM scan_config WHERE enabled=1"
+                    f"SELECT id FROM scan_config WHERE dataSource LIKE '%{source_kw}%' AND enabled=1"
                 ).fetchall()
             if rows:
-                ids = [r["id"] for r in rows]
-                trigger_background_queue(ids, skip_disabled=True)
-                triggered.append({"task": "scan", "config_ids": ids})
-            else:
-                logger.warning("⚠️ [心跳触发] 无可用激活配置")
-        else:
-            logger.info("⏰ [心跳触发] 扫描任务忙碌，跳过")
+                all_scan_ids.extend([r["id"] for r in rows])
+                triggered.append({"task": task_key, "config_ids": [r["id"] for r in rows]})
+
+    # 合并触发一次扫描
+    if all_scan_ids:
+        unique_ids = list(dict.fromkeys(all_scan_ids))  # 保序去重
+        trigger_background_queue(unique_ids, skip_disabled=True)
+        logger.info(f"✅ [心跳合并扫描] 共 {len(unique_ids)} 个配置: {unique_ids}")
 
     # 复测任务触发
     janitor_cron = get_setting("janitor_cron", "")
@@ -185,33 +203,7 @@ async def handle_heartbeat() -> dict:
         await trigger_source_fetch(source_url, source_type="zoomeye")
         triggered.append({"task": "zoomeye_fetch"})
 
-    # 0.zone 定时扫描
-    ozone_scan_cron = get_setting("ozone_scan_cron", "")
-    if cron_match(ozone_scan_cron, cron_now) and _should_exec("ozone_scan", now):
-        if task_runner.is_idle():
-            logger.info(f"⏰ [心跳触发] 0.zone 定时扫描 -> cron: {ozone_scan_cron}")
-            with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT id FROM scan_config WHERE dataSource LIKE '%ozone%' AND enabled=1"
-                ).fetchall()
-            if rows:
-                trigger_background_queue([r["id"] for r in rows])
-                triggered.append({"task": "ozone_scan", "config_ids": [r["id"] for r in rows]})
-
-    # ZoomEye 定时扫描
-    zoomeye_scan_cron = get_setting("zoomeye_scan_cron", "")
-    if cron_match(zoomeye_scan_cron, cron_now) and _should_exec("zoomeye_scan", now):
-        if task_runner.is_idle():
-            logger.info(f"⏰ [心跳触发] ZoomEye 定时扫描 -> cron: {zoomeye_scan_cron}")
-            with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT id FROM scan_config WHERE dataSource LIKE '%zoomeye%' AND enabled=1"
-                ).fetchall()
-            if rows:
-                trigger_background_queue([r["id"] for r in rows])
-                triggered.append({"task": "zoomeye_scan", "config_ids": [r["id"] for r in rows]})
-
-    # DayDayMap 定时拉取
+    # 0.zone 定时拉取
     daydaymap_fetch_cron = get_setting("daydaymap_fetch_cron", "")
     if cron_match(daydaymap_fetch_cron, cron_now) and _should_exec("daydaymap_fetch", now) and get_setting("daydaymap_enabled", "0") == "1":
         logger.info(f"⏰ [心跳触发] DayDayMap 定时拉取 -> cron: {daydaymap_fetch_cron}")
@@ -220,19 +212,6 @@ async def handle_heartbeat() -> dict:
         if sources:
             cache_sources("daydaymap", sources)
         triggered.append({"task": "daydaymap_fetch"})
-
-    # DayDayMap 定时扫描
-    daydaymap_scan_cron = get_setting("daydaymap_scan_cron", "")
-    if cron_match(daydaymap_scan_cron, cron_now) and _should_exec("daydaymap_scan", now):
-        if task_runner.is_idle():
-            logger.info(f"⏰ [心跳触发] DayDayMap 定时扫描 -> cron: {daydaymap_scan_cron}")
-            with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT id FROM scan_config WHERE dataSource LIKE '%daydaymap%' AND enabled=1"
-                ).fetchall()
-            if rows:
-                trigger_background_queue([r["id"] for r in rows])
-                triggered.append({"task": "daydaymap_scan", "config_ids": [r["id"] for r in rows]})
 
     # Hunter 定时拉取
     hunter_fetch_cron = get_setting("hunter_fetch_cron", "")
@@ -243,18 +222,5 @@ async def handle_heartbeat() -> dict:
         if sources:
             cache_sources("hunter", sources)
         triggered.append({"task": "hunter_fetch"})
-
-    # Hunter 定时扫描
-    hunter_scan_cron = get_setting("hunter_scan_cron", "")
-    if cron_match(hunter_scan_cron, cron_now) and _should_exec("hunter_scan", now):
-        if task_runner.is_idle():
-            logger.info(f"⏰ [心跳触发] Hunter 定时扫描 -> cron: {hunter_scan_cron}")
-            with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT id FROM scan_config WHERE dataSource LIKE '%hunter%' AND enabled=1"
-                ).fetchall()
-            if rows:
-                trigger_background_queue([r["id"] for r in rows])
-                triggered.append({"task": "hunter_scan", "config_ids": [r["id"] for r in rows]})
 
     return triggered
