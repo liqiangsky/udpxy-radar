@@ -44,11 +44,20 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
         connector=connector
     ) as session:
 
-        for index, cfg_id in enumerate(config_ids):
+        index = 0
+        while True:
+            # 每次循环从 task_runner 获取最新队列（支持运行时追加/删除）
+            progress = task_runner.get_progress()
+            queue = list(progress["config_ids"])
+
+            if index >= len(queue):
+                break
+
+            cfg_id = queue[index]
 
             # 全局停止信号
             if task_runner.should_stop():
-                logger.info(f"⛔ [停止扫描] 配置 {config['name']} 被用户停止")
+                logger.info(f"⛔ [停止扫描] 配置 id={cfg_id} 被用户停止")
                 break
 
             with get_db() as conn:
@@ -59,12 +68,14 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
 
             if not row_data:
                 logger.warning(f"⚠️ [配置不存在] id={cfg_id}，跳过")
+                index += 1
                 continue
 
             config = dict(row_data)
 
             if skip_disabled and not config["enabled"]:
                 logger.warning(f"⚠️ [配置已停用] {config['name']}，跳过")
+                index += 1
                 continue
 
             task_runner.update_progress(
@@ -272,13 +283,16 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     )
 
             # 配置间延迟
-            if index < len(config_ids) - 1 and not task_runner.should_stop():
+            progress_now = task_runner.get_progress()
+            if index < len(progress_now["config_ids"]) - 1 and not task_runner.should_stop():
                 logger.info(f"⏳ [等待延迟] {global_config_delay}s 后进入下一个配置")
                 await asyncio.sleep(global_config_delay)
 
-        # 保存运行中的队列（含运行时追加的配置），必须在 finish() 之前
-        remaining_queue = task_runner.get_progress()["config_ids"]
+            index += 1
 
+        # 自动续跑：用户停止当前配置后，用剩余配置继续执行
+        # 保存队列快照（含运行时追加的配置），再调用 finish() 清空
+        queue_snapshot = list(task_runner.get_progress()["config_ids"])
         task_runner.finish()
 
         if total_valid > 0:
@@ -287,11 +301,10 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
         else:
             logger.info("📭 [扫描完成] 本次扫描未产生新活源")
 
-        # 自动续跑：用户停止当前配置后，用剩余配置继续执行
         skipped_ids = task_runner.pop_skipped_configs()
         if skipped_ids:
-            next_index = index + 1
-            remaining = [cid for cid in remaining_queue[next_index:] if cid not in skipped_ids]
+            next_index = index
+            remaining = [cid for cid in queue_snapshot[next_index:] if cid not in skipped_ids]
 
             if remaining:
                 logger.info(f"⏭️ [自动续跑] 用剩余 {len(remaining)} 个配置继续: {remaining}")
