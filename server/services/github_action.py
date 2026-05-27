@@ -17,7 +17,12 @@ async def trigger_source_fetch(source_url: str, source_type: str = "zoomeye") ->
     token = os.getenv("GITHUB_ACTION_TOKEN", "")
     owner = os.getenv("GITHUB_ACTION_OWNER", "")
     repo = os.getenv("GITHUB_ACTION_REPO", "")
-    callback_token = os.getenv("CALLBACK_TOKEN", "")
+    callback_token = ""
+    try:
+        from db.database import get_setting
+        callback_token = get_setting("callback_token", "")
+    except Exception:
+        pass
 
     if not token or not owner or not repo:
         logger.warning("🚨 [GitHub Action] 未配置 GITHUB_ACTION_TOKEN/OWNER/REPO 环境变量")
