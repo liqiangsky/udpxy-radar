@@ -61,6 +61,10 @@ async def check_api_token(request, call_next):
 
     auth_header = request.headers.get("X-Callback-Token", "")
     if auth_header != token:
+        logging.warning(
+            f"[auth] 403: expected={repr(token)}, got={repr(auth_header)}, "
+            f"path={request.url.path}, method={request.method}"
+        )
         return JSONResponse(status_code=403, content={"detail": "认证失败"})
 
     return await call_next(request)
