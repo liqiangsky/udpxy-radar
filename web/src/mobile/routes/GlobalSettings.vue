@@ -311,7 +311,7 @@
       </div>
 
       <!-- 安全认证 -->
-      <div class="card">
+      <div class="settings-card">
         <div class="card-title-group">
           <span class="material-symbols-outlined card-icon">lock</span>
           <h2>安全认证</h2>
