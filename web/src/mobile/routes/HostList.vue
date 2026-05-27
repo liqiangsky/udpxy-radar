@@ -43,7 +43,7 @@
         />
       </TransitionGroup>
 
-      <div v-if="filteredList.length === 0" class="empty-state">
+      <div v-if="!loading && filteredList.length === 0" class="empty-state">
         <p>暂无符合当前筛选条件的组播源</p>
       </div>
     </div>

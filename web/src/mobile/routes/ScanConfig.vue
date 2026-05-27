@@ -11,7 +11,14 @@
     <div class="header-spacer"></div>
 
     <div class="config-list">
-      <TransitionGroup name="list-fade">
+      <div v-if="!scanConfigStore.loaded" class="skeleton-list">
+        <div v-for="i in 3" :key="i" class="skeleton-card">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-sub"></div>
+          <div class="skeleton-line skeleton-sub narrow"></div>
+        </div>
+      </div>
+      <TransitionGroup v-else name="list-fade">
         <div
           v-for="config in configs"
           :key="config.id"
@@ -71,7 +78,7 @@
         </div>
       </TransitionGroup>
 
-      <div v-if="configs.length === 0" class="empty-state">
+      <div v-if="scanConfigStore.loaded && configs.length === 0" class="empty-state">
         暂无扫描配置，点击右上角新建
       </div>
     </div>
@@ -396,12 +403,34 @@ onUnmounted(() => {
   transition: all 0.3s var(--ease-spring);
 }
 .config-card.status-scanning {
-  border-color: rgba(52, 199, 89, 0.25);
-  box-shadow: 0 8px 32px rgba(52, 199, 89, 0.04);
+  border-color: rgba(52, 199, 89, 0.3);
+  box-shadow: 0 4px 24px rgba(52, 199, 89, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+.config-card.status-scanning::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #34c759, transparent);
 }
 .config-card.status-queued {
-  border-color: rgba(255, 149, 0, 0.2);
-  box-shadow: 0 8px 32px rgba(255, 149, 0, 0.03);
+  border-color: rgba(255, 149, 0, 0.3);
+  box-shadow: 0 4px 24px rgba(255, 149, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+.config-card.status-queued::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #ff9500, transparent);
 }
 
 .card-top {
@@ -422,28 +451,30 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 .status-dot-badge {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 3px 8px;
+  border-radius: 10px;
 }
 .status-dot-badge::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
-.status-dot-badge.idle { color: var(--text-muted); }
+.status-dot-badge.idle { color: var(--text-muted); background: var(--bg-neutral); }
 .status-dot-badge.idle::before { background: var(--text-muted); }
-.status-dot-badge.scanning { color: var(--color-green); }
+.status-dot-badge.scanning { color: #fff; background: #34c759; }
 .status-dot-badge.scanning::before {
-  background: var(--color-green);
+  background: #fff;
   animation: pulse 1.5s infinite;
 }
-.status-dot-badge.queued { color: var(--color-orange); }
+.status-dot-badge.queued { color: #fff; background: #ff9500; }
 .status-dot-badge.queued::before {
-  background: var(--color-orange);
+  background: #fff;
 }
 
 .run-toggle-btn {
@@ -610,6 +641,36 @@ onUnmounted(() => {
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+/* 骨架屏 */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 90px;
+}
+.skeleton-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-line {
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-neutral) 25%, #E8E8ED 50%, var(--bg-neutral) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+.skeleton-title { width: 60%; }
+.skeleton-sub { width: 40%; }
+.skeleton-sub.narrow { width: 25%; }
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .list-fade-enter-active, .list-fade-leave-active { transition: all 0.3s var(--ease-spring); }

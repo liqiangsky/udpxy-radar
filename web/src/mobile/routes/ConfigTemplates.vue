@@ -11,7 +11,14 @@
     <div class="header-spacer"></div>
 
     <div class="template-list">
-      <TransitionGroup name="list-fade">
+      <div v-if="loading" class="skeleton-list">
+        <div v-for="i in 3" :key="i" class="skeleton-card">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-sub"></div>
+          <div class="skeleton-line skeleton-sub narrow"></div>
+        </div>
+      </div>
+      <TransitionGroup v-else name="list-fade">
         <div
           v-for="tpl in templates"
           :key="tpl.id"
@@ -19,7 +26,6 @@
         >
           <div class="card-top">
             <h3 class="tpl-name">{{ tpl.name }}</h3>
-            <button class="text-btn edit" @click="openForm(tpl)">编辑</button>
           </div>
 
           <div class="card-grid">
@@ -44,12 +50,13 @@
           </div>
 
           <div class="card-actions">
+            <button class="text-btn edit" @click="openForm(tpl)">编辑</button>
             <button class="text-btn delete" @click="handleDelete(tpl.id)">删除</button>
           </div>
         </div>
       </TransitionGroup>
 
-      <div v-if="templates.length === 0" class="empty-state">
+      <div v-if="!loading && templates.length === 0" class="empty-state">
         暂无模板，点击右上角新建
       </div>
     </div>
@@ -112,6 +119,7 @@ import { regions, operators } from '@/data.js'
 import { toast } from '@/components/Toast'
 
 const templates = ref([])
+const loading = ref(false)
 
 const formState = reactive({
   visible: false,
@@ -130,8 +138,13 @@ const getDefaultFormData = () => ({
 const formData = reactive(getDefaultFormData())
 
 const fetch = async () => {
-  const res = await request.get('/templates')
-  templates.value = res
+  loading.value = true
+  try {
+    const res = await request.get('/templates')
+    templates.value = res
+  } finally {
+    loading.value = false
+  }
 }
 
 const openForm = (editTarget = null) => {
@@ -257,9 +270,6 @@ onMounted(() => {
 }
 
 .card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 14px;
 }
 .tpl-name {
@@ -369,6 +379,36 @@ onMounted(() => {
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+/* 骨架屏 */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 90px;
+}
+.skeleton-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-line {
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-neutral) 25%, #E8E8ED 50%, var(--bg-neutral) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+.skeleton-title { width: 60%; }
+.skeleton-sub { width: 40%; }
+.skeleton-sub.narrow { width: 25%; }
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .list-fade-enter-active, .list-fade-leave-active { transition: all 0.3s var(--ease-spring); }

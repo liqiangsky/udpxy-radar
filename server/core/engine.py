@@ -276,6 +276,9 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                 logger.info(f"⏳ [等待延迟] {global_config_delay}s 后进入下一个配置")
                 await asyncio.sleep(global_config_delay)
 
+        # 保存运行中的队列（含运行时追加的配置），必须在 finish() 之前
+        remaining_queue = task_runner.get_progress()["config_ids"]
+
         task_runner.finish()
 
         if total_valid > 0:
@@ -287,9 +290,8 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
         # 自动续跑：用户停止当前配置后，用剩余配置继续执行
         skipped_ids = task_runner.pop_skipped_configs()
         if skipped_ids:
-            progress = task_runner.get_progress()
-            next_index = progress["current_index"] + 1
-            remaining = [cid for cid in progress["config_ids"][next_index:] if cid not in skipped_ids]
+            next_index = index + 1
+            remaining = [cid for cid in remaining_queue[next_index:] if cid not in skipped_ids]
 
             if remaining:
                 logger.info(f"⏭️ [自动续跑] 用剩余 {len(remaining)} 个配置继续: {remaining}")
