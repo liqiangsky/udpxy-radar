@@ -147,6 +147,7 @@ async def handle_heartbeat() -> dict:
                                     logger.warning(f"🗑️ [老化淘汰] {source['host']}")
                                     with get_cache_db() as conn:
                                         conn.execute("DELETE FROM iptv_list WHERE id=?", (source["id"],))
+                                        conn.execute("DELETE FROM source_cache WHERE host=?", (source["host"],))
 
                             await asyncio.gather(
                                 *(recheck_worker(s) for s in active_sources)
