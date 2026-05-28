@@ -281,4 +281,10 @@ async def api_test_delay(source_id: int):
     except Exception as e:
         logger.warning(f"⚠️ [延迟测试失败] id={source_id} -> {e}")
 
+    now = int(time.time() * 1000)
+    with get_cache_db() as conn:
+        conn.execute(
+            "UPDATE iptv_list SET delay=?, updateTime=? WHERE id=?",
+            (-1, now, source_id)
+        )
     return {"ok": False, "delay": -1}
