@@ -5,7 +5,7 @@ import time
 from typing import Optional
 from datetime import datetime
 
-from db.database import get_cache_db
+from db.database import get_cache_db, get_setting
 
 logger = logging.getLogger("udpxy_radar")
 router = APIRouter()
