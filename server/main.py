@@ -56,6 +56,10 @@ async def check_api_token(request, call_next):
     if request.method not in ("POST", "PUT", "DELETE"):
         return await call_next(request)
 
+    # 登录/登出不需要 callback_token
+    if request.url.path in ("/api/login", "/api/logout"):
+        return await call_next(request)
+
     token = get_setting("callback_token", "")
     if not token:
         # 未设置 token，不拦截

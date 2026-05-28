@@ -8,11 +8,6 @@
 
       <form @submit.prevent="handleLogin">
         <div class="form-item">
-          <label>用户名</label>
-          <input v-model="form.username" type="text" placeholder="请输入用户名" required autocomplete="username" />
-        </div>
-
-        <div class="form-item">
           <label>密码</label>
           <input v-model="form.password" type="password" placeholder="请输入密码" required autocomplete="current-password" />
         </div>
@@ -36,7 +31,7 @@ import { toast } from '@/components/Toast'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const form = reactive({ username: '', password: '' })
+const form = reactive({ password: '' })
 const submitting = ref(false)
 const errorMsg = ref('')
 
@@ -44,7 +39,7 @@ const handleLogin = async () => {
   submitting.value = true
   errorMsg.value = ''
   try {
-    await authStore.login(form.username, form.password)
+    await authStore.login(form.password)
     toast.success('登录成功')
     router.replace('/')
   } catch (e) {

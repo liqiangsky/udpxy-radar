@@ -5,6 +5,10 @@ from services.log_buffer import get_recent_logs
 
 router = APIRouter()
 
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
 @router.get("/settings")
 def api_get_settings():
     return {
@@ -43,6 +47,7 @@ def api_get_settings():
         }
     }
 
+
 @router.put("/settings")
 def api_update_settings(data: GlobalSettingsUpdate):
     with get_db() as conn:
@@ -72,6 +77,7 @@ def api_update_settings(data: GlobalSettingsUpdate):
     janitor.stop()
     janitor.start()
     return {"ok": True}
+
 
 @router.get("/logs")
 def api_get_logs(
