@@ -147,7 +147,7 @@ const getItemSourceImg = (sourceType) => {
 }
 
 .badge-txt {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -173,7 +173,7 @@ const getItemSourceImg = (sourceType) => {
 .delay-interactive-badge {
   background: var(--bg-status-good);
   color: var(--color-green);
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;

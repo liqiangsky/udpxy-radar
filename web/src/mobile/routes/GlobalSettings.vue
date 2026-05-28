@@ -329,12 +329,43 @@
         </div>
       </div>
 
+      <!-- 后台日志 -->
+      <div class="settings-card">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">receipt_long</span>
+          <h2>后台日志</h2>
+          <button class="refresh-btn" @click="refreshLogs">
+            <span class="material-symbols-outlined" :class="{ spin: logsLoading }">refresh</span>
+          </button>
+        </div>
+
+        <div class="log-filters">
+          <div class="log-level-chips">
+            <span
+              v-for="lv in ['ALL', 'INFO', 'WARNING', 'ERROR']"
+              :key="lv"
+              class="log-level-chip"
+              :class="{ active: logLevel === lv }"
+              @click="logLevel = lv"
+            >{{ lv === 'ALL' ? '全部' : lv }}</span>
+          </div>
+        </div>
+
+        <div class="log-viewer" ref="logViewerRef">
+          <div v-if="logs.length === 0 && !logsLoading" class="log-empty">暂无日志</div>
+          <div v-else v-for="(line, i) in logs" :key="i" class="log-line" :class="getLogLevelClass(line)">
+            <span class="log-text">{{ line }}</span>
+          </div>
+          <div v-if="logsLoading" class="log-loading">加载中...</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { toast } from '@/components/Toast'
 import { useSettingsStore } from '@/stores/settings'
 import request from '@/api'
@@ -371,6 +402,52 @@ const settings = reactive({
   scheduling: { scanCron: '', janitorCron: '' },
   security: { callbackToken: '' }
 })
+
+// 日志查看器
+const logs = ref([])
+const logsLoading = ref(false)
+const logLevel = ref('ALL')
+const logViewerRef = ref(null)
+
+const refreshLogs = async () => {
+  logsLoading.value = true
+  try {
+    const params = { lines: 200 }
+    if (logLevel.value !== 'ALL') params.level = logLevel.value
+    const res = await request.get('/logs', { params })
+    logs.value = res.logs || []
+    // 自动滚动到底部
+    setTimeout(() => {
+      if (logViewerRef.value) {
+        logViewerRef.value.scrollTop = logViewerRef.value.scrollHeight
+      }
+    }, 100)
+  } catch {
+    logs.value = []
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+const getLogLevelClass = (line) => {
+  if (line.includes('[ERROR]') || line.includes('[EXCEPTION]') || line.includes('[CRITICAL]')) return 'log-error'
+  if (line.includes('[WARNING]')) return 'log-warning'
+  return ''
+}
+
+// 日志级别变化时自动刷新
+watch(logLevel, () => refreshLogs())
+
+// 动态轮询：每 3 秒自动刷新最新日志
+let logPollTimer = null
+
+const startLogPolling = () => {
+  logPollTimer = setInterval(refreshLogs, 3000)
+}
+
+const stopLogPolling = () => {
+  if (logPollTimer) clearInterval(logPollTimer)
+}
 
 const saving = ref(false)
 
@@ -480,6 +557,12 @@ const handleSave = async () => {
 
 onMounted(() => {
   loadSettings()
+  refreshLogs()
+  startLogPolling()
+})
+
+onUnmounted(() => {
+  stopLogPolling()
 })
 </script>
 
@@ -696,4 +779,69 @@ input:checked + .slider:before { transform: translateX(18px); }
   border-bottom: 1px solid #E8E8ED;
 }
 .help-content td:first-child { font-weight: 600; color: var(--text-primary); }
+
+/* 日志查看器 */
+.refresh-btn {
+  margin-left: auto;
+  background: var(--bg-neutral);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.refresh-btn .material-symbols-outlined {
+  font-size: 18px !important;
+  color: var(--text-muted);
+}
+.refresh-btn:active { transform: scale(0.9); }
+
+.log-filters { margin-bottom: 8px; }
+.log-level-chips {
+  display: flex;
+  gap: 6px;
+}
+.log-level-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--bg-neutral);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s ease;
+}
+.log-level-chip.active {
+  background: rgba(0, 122, 255, 0.12);
+  color: var(--color-blue);
+}
+
+.log-viewer {
+  background: #1e1e1e;
+  border-radius: var(--radius-card);
+  padding: 10px 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #d4d4d4;
+  word-break: break-all;
+}
+.log-viewer::-webkit-scrollbar { width: 4px; }
+.log-viewer::-webkit-scrollbar-track { background: transparent; }
+.log-viewer::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
+
+.log-line { padding: 1px 0; }
+.log-text { white-space: pre-wrap; }
+.log-error .log-text { color: #f48771; }
+.log-warning .log-text { color: #dcdcaa; }
+.log-empty { color: var(--text-muted); text-align: center; padding: 20px 0; }
+.log-loading { color: var(--color-blue); text-align: center; padding: 10px 0; font-size: 11px; }
 </style>

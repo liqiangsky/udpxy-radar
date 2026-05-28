@@ -258,7 +258,7 @@ async def api_test_delay(source_id: int):
 
     test_url = f"{host_val.rstrip('/')}/{protocol_val}/{target_val}"
 
-    timeout_sec = 3.0
+    timeout_sec = int(get_setting("timeout", "2000")) / 1000.0
 
     try:
         start_t = time.time()
