@@ -2,22 +2,22 @@
   <router-view />
 
   <nav class="bottom-tabbar" v-show="!$route.meta?.hideNavbar && !$route.path.startsWith('/pc')">
-    <router-link to="/mobile" class="tab-item" active-class="active" exact-active-class="active">
+    <router-link to="/hosts" class="tab-item" active-class="active" exact-active-class="active">
       <span class="material-symbols-outlined tab-icon-g">tv</span>
       <span class="tab-text">组播源</span>
     </router-link>
 
-    <router-link to="/mobile/templates" class="tab-item" active-class="active">
+    <router-link to="/templates" class="tab-item" active-class="active">
       <span class="material-symbols-outlined tab-icon-g">widgets</span>
       <span class="tab-text">配置模板</span>
     </router-link>
 
-    <router-link to="/mobile/config" class="tab-item" active-class="active">
+    <router-link to="/config" class="tab-item" active-class="active">
       <span class="material-symbols-outlined tab-icon-g">analytics</span>
       <span class="tab-text">扫描配置</span>
     </router-link>
 
-    <router-link to="/mobile/settings" class="tab-item" active-class="active">
+    <router-link to="/settings" class="tab-item" active-class="active">
       <span class="material-symbols-outlined tab-icon-g">settings</span>
       <span class="tab-text">全局设置</span>
     </router-link>
