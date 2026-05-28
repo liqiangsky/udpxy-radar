@@ -43,7 +43,7 @@
         />
       </TransitionGroup>
 
-      <div v-if="filteredList.length === 0" class="empty-state">
+      <div v-if="!loading && filteredList.length === 0" class="empty-state">
         <p>暂无符合当前筛选条件的组播源</p>
       </div>
     </div>
@@ -124,6 +124,12 @@ const loadPool = async () => {
           // 频道
           //
           channelName: item.channelName,
+
+          //
+          // 时间
+          //
+          createTime: item.createTime,
+          lastSeen: item.lastSeen,
 
           //
           // 来源

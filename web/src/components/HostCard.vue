@@ -36,10 +36,18 @@
       </div>
 
       <div class="grid-item time-column full-width">
-        <span class="badge-lbl">记录</span>
+        <span class="badge-lbl">发现</span>
         <div class="time-wrapper">
           <span class="material-symbols-outlined icon-g">history</span>
-          <span class="badge-txt color-gray font-mono">{{ item.time }}</span>
+          <span class="badge-txt color-gray font-mono">{{ item.createTime }}</span>
+        </div>
+      </div>
+
+      <div class="grid-item time-column full-width">
+        <span class="badge-lbl">验证</span>
+        <div class="time-wrapper">
+          <span class="material-symbols-outlined icon-g">update</span>
+          <span class="badge-txt color-gray font-mono">{{ item.lastSeen }}</span>
         </div>
       </div>
     </div>
@@ -139,7 +147,7 @@ const getItemSourceImg = (sourceType) => {
 }
 
 .badge-txt {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -165,7 +173,7 @@ const getItemSourceImg = (sourceType) => {
 .delay-interactive-badge {
   background: var(--bg-status-good);
   color: var(--color-green);
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;

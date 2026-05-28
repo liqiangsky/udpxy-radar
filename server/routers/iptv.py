@@ -5,7 +5,7 @@ import time
 from typing import Optional
 from datetime import datetime
 
-from db.database import get_cache_db
+from db.database import get_cache_db, get_setting
 
 logger = logging.getLogger("udpxy_radar")
 router = APIRouter()
@@ -114,6 +114,16 @@ def api_get_iptv_pool(
 
             last_seen = ""
 
+        try:
+
+            create_time = datetime.fromtimestamp(
+                row["createTime"] / 1000.0
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
+        except Exception:
+
+            create_time = ""
+
         #
         # 节点信息
         #
@@ -161,6 +171,7 @@ def api_get_iptv_pool(
             #
             # 时间
             #
+            "createTime": create_time,
             "lastSeen": last_seen,
             "updateTime": row["updateTime"]
         })
@@ -247,7 +258,7 @@ async def api_test_delay(source_id: int):
 
     test_url = f"{host_val.rstrip('/')}/{protocol_val}/{target_val}"
 
-    timeout_sec = 3.0
+    timeout_sec = int(get_setting("timeout", "2000")) / 1000.0
 
     try:
         start_t = time.time()
@@ -270,4 +281,10 @@ async def api_test_delay(source_id: int):
     except Exception as e:
         logger.warning(f"⚠️ [延迟测试失败] id={source_id} -> {e}")
 
+    now = int(time.time() * 1000)
+    with get_cache_db() as conn:
+        conn.execute(
+            "UPDATE iptv_list SET delay=?, updateTime=? WHERE id=?",
+            (-1, now, source_id)
+        )
     return {"ok": False, "delay": -1}

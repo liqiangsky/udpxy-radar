@@ -329,6 +329,16 @@
         </div>
       </div>
 
+      <!-- 后台日志入口 -->
+      <div class="settings-card logs-entry-card" @click="$router.push('/mobile/logs')">
+        <div class="card-title-group">
+          <span class="material-symbols-outlined card-icon">receipt_long</span>
+          <h2>后台日志</h2>
+          <span class="material-symbols-outlined entry-arrow">chevron_right</span>
+        </div>
+        <p class="field-desc">查看实时运行日志，支持按级别筛选</p>
+      </div>
+
     </div>
   </div>
 </template>
@@ -696,4 +706,13 @@ input:checked + .slider:before { transform: translateX(18px); }
   border-bottom: 1px solid #E8E8ED;
 }
 .help-content td:first-child { font-weight: 600; color: var(--text-primary); }
+
+/* 日志入口卡片 */
+.logs-entry-card { cursor: pointer; transition: all 0.2s ease; }
+.logs-entry-card:active { transform: scale(0.98); }
+.entry-arrow {
+  margin-left: auto;
+  font-size: 22px !important;
+  color: var(--text-muted);
+}
 </style>

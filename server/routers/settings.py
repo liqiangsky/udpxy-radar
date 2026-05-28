@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from db.database import get_db, get_setting
 from db.models import GlobalSettingsUpdate
+from services.log_buffer import get_recent_logs
 
 router = APIRouter()
 
@@ -71,3 +72,12 @@ def api_update_settings(data: GlobalSettingsUpdate):
     janitor.stop()
     janitor.start()
     return {"ok": True}
+
+@router.get("/logs")
+def api_get_logs(
+    lines: int = Query(100, ge=10, le=500),
+    level: str = Query(None)
+):
+    """获取最近日志，可选按级别过滤 (INFO/WARNING/ERROR)"""
+    logs = get_recent_logs(lines=lines, level=level)
+    return {"logs": logs, "total": len(logs)}

@@ -13,6 +13,7 @@ import logging
 
 from db.database import init_db, init_cache_db, get_setting
 from services.hf_sync import pull_from_hf, push_to_hf
+from services.log_buffer import setup_log_buffer
 from core.engine import janitor
 from routers import settings, configs, iptv, templates, cron  # 导入拆分出去的路由模块
 
@@ -26,6 +27,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def system_lifespan(app: FastAPI):
     # 启动：先同步云端，再初始化本地，最后唤醒守卫
+    setup_log_buffer()
     pull_from_hf()
     init_db()
     init_cache_db()

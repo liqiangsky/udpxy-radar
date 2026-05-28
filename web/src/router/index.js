@@ -21,7 +21,12 @@ const routes = [
   },
   {
     path: '/mobile/settings',
-    component: () => import('@/mobile/routes/GlobalSettings.vue') // 👈 核心新增：全局设置页
+    component: () => import('@/mobile/routes/GlobalSettings.vue') // 全局设置页
+  },
+  {
+    path: '/mobile/logs',
+    component: () => import('@/mobile/routes/ServerLogs.vue'), // 后台日志页
+    meta: { hideNavbar: true }
   }
   // 以后做 web 端时，在这里直接加 /web 路由即可，两套完全独立
 ]
