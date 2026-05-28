@@ -49,27 +49,31 @@ app.add_middleware(
 )
 
 
+# 内存 session 存储（由 auth 模块导入）
+from routers.auth import _sessions as auth_sessions
+
+
 @app.middleware("http")
-async def check_api_token(request, call_next):
-    """所有写操作接口统一认证"""
-    # 只拦截写操作
-    if request.method not in ("POST", "PUT", "DELETE"):
+async def check_auth(request, call_next):
+    """所有接口都需要认证：X-Auth-Token（登录 session）或 X-Callback-Token（外部服务）"""
+    # 豁免路径：登录、登出、iptv-pool
+    if request.url.path in ("/api/login", "/api/logout", "/api/iptv-pool"):
         return await call_next(request)
 
-    # 登录/登出不需要 callback_token
-    if request.url.path in ("/api/login", "/api/logout"):
+    # 方式 1：用户登录 session 认证
+    auth_token = request.headers.get("X-Auth-Token", "")
+    if auth_token and auth_token in auth_sessions:
         return await call_next(request)
 
-    token = get_setting("callback_token", "")
-    if not token:
-        # 未设置 token，不拦截
-        return await call_next(request)
+    # 方式 2：外部服务 callback_token 认证（CF Worker / GitHub Action）
+    callback_token = get_setting("callback_token", "")
+    if callback_token:
+        cb_header = request.headers.get("X-Callback-Token", "")
+        if cb_header == callback_token:
+            return await call_next(request)
 
-    auth_header = request.headers.get("X-Callback-Token", "")
-    if auth_header != token:
-        return JSONResponse(status_code=403, content={"detail": "认证失败"})
-
-    return await call_next(request)
+    # 两种认证都不通过
+    return JSONResponse(status_code=401, content={"detail": "未认证"})
 
 
 # 🔌 像插排一样，把各个子路由插进来

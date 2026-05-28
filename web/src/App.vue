@@ -21,6 +21,11 @@
       <span class="material-symbols-outlined tab-icon-g">settings</span>
       <span class="tab-text">全局设置</span>
     </router-link>
+
+    <button class="tab-item logout-btn" @click="handleLogout">
+      <span class="material-symbols-outlined tab-icon-g">logout</span>
+      <span class="tab-text">退出</span>
+    </button>
   </nav>
 
   <!-- 未登录时的登录按钮 -->
@@ -32,11 +37,12 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const router = useRouter()
 
 const showTabbar = computed(() => {
   return authStore.isLoggedIn && !route.meta?.hideNavbar
@@ -45,6 +51,11 @@ const showTabbar = computed(() => {
 const showLoginBtn = computed(() => {
   return !authStore.isLoggedIn && route.path !== '/login'
 })
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -99,6 +110,14 @@ const showLoginBtn = computed(() => {
 .tab-item.active .tab-icon-g {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   transform: scale(1.08);
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-red);
+  width: 20%;
 }
 
 .floating-login {
