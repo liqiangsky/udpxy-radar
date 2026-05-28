@@ -6,11 +6,15 @@ const request = axios.create({
   timeout: 15000
 })
 
-// 请求拦截器：每次请求自动带上认证 token
+// 请求拦截器：每次请求自动带上认证 token 和回调 token
 request.interceptors.request.use((config) => {
-  const token = localStorage.getItem('callback_token')
-  if (token) {
-    config.headers['X-Callback-Token'] = token
+  const authToken = localStorage.getItem('auth_token')
+  if (authToken) {
+    config.headers['X-Auth-Token'] = authToken
+  }
+  const callbackToken = localStorage.getItem('callback_token')
+  if (callbackToken) {
+    config.headers['X-Callback-Token'] = callbackToken
   }
   return config
 })

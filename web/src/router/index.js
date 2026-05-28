@@ -1,39 +1,57 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  // 默认重定向到移动端主页
   {
     path: '/',
-    redirect: '/mobile'
-  },
-  // 移动端路由组
-  {
-    path: '/mobile',
-    component: () => import('../mobile/routes/HostList.vue') // 移动端主页
+    redirect: '/hosts'
   },
   {
-    path: '/mobile/config',
-    component: () => import('../mobile/routes/ScanConfig.vue') // 扫描配置页
+    path: '/login',
+    component: () => import('@/routes/Login.vue'),
+    meta: { public: true }
   },
   {
-    path: '/mobile/templates',
-    component: () => import('../mobile/routes/ConfigTemplates.vue') // 配置模板页
+    path: '/hosts',
+    component: () => import('@/routes/HostList.vue')
   },
   {
-    path: '/mobile/settings',
-    component: () => import('@/mobile/routes/GlobalSettings.vue') // 全局设置页
+    path: '/config',
+    component: () => import('@/routes/ScanConfig.vue'),
+    meta: { requiresAuth: true }
   },
   {
-    path: '/mobile/logs',
-    component: () => import('@/mobile/routes/ServerLogs.vue'), // 后台日志页
-    meta: { hideNavbar: true }
+    path: '/templates',
+    component: () => import('@/routes/ConfigTemplates.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    component: () => import('@/routes/GlobalSettings.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/logs',
+    component: () => import('@/routes/ServerLogs.vue'),
+    meta: { requiresAuth: true, hideNavbar: true }
   }
-  // 以后做 web 端时，在这里直接加 /web 路由即可，两套完全独立
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 路由守卫：未登录时跳转到登录页（/hosts 除外）
+router.beforeEach((to, from) => {
+  if (to.meta.public) return true
+
+  const token = localStorage.getItem('auth_token')
+  if (!token && to.meta.requiresAuth !== false) {
+    if (to.path !== '/hosts') {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+  }
+  return true
 })
 
 export default router

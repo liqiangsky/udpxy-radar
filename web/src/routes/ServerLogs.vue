@@ -146,6 +146,16 @@ onUnmounted(() => {
   gap: 8px;
   max-width: 100vw;
 }
+
+@media (min-width: 768px) {
+  .page-header { max-width: 720px; margin-left: auto; margin-right: auto; }
+}
+@media (min-width: 1024px) {
+  .page-header { max-width: 1100px; }
+}
+@media (min-width: 1440px) {
+  .page-header { max-width: 1400px; }
+}
 .page-title {
   flex: 1;
   text-align: center;
@@ -194,6 +204,17 @@ onUnmounted(() => {
 .log-page {
   width: 100%;
   max-width: var(--max-content);
+  padding-bottom: 90px;
+}
+
+@media (min-width: 768px) {
+  .log-page { max-width: 720px; }
+}
+@media (min-width: 1024px) {
+  .log-page { max-width: 1100px; }
+}
+@media (min-width: 1440px) {
+  .log-page { max-width: 1400px; }
 }
 
 .log-filters {
@@ -239,6 +260,10 @@ onUnmounted(() => {
   line-height: 1.6;
   color: #d4d4d4;
   word-break: break-all;
+}
+
+@media (min-width: 768px) {
+  .log-viewer { margin: 0; }
 }
 .log-viewer::-webkit-scrollbar { width: 4px; }
 .log-viewer::-webkit-scrollbar-track { background: transparent; }

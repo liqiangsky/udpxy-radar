@@ -330,7 +330,7 @@
       </div>
 
       <!-- 后台日志入口 -->
-      <div class="settings-card logs-entry-card" @click="$router.push('/mobile/logs')">
+      <div class="settings-card logs-entry-card" @click="$router.push('/logs')">
         <div class="card-title-group">
           <span class="material-symbols-outlined card-icon">receipt_long</span>
           <h2>后台日志</h2>
@@ -509,6 +509,20 @@ onMounted(() => {
   align-items: center;
   max-width: 100vw;
 }
+
+@media (min-width: 768px) {
+  .page-header {
+    max-width: 720px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+@media (min-width: 1024px) {
+  .page-header { max-width: 1100px; }
+}
+@media (min-width: 1440px) {
+  .page-header { max-width: 1400px; }
+}
 .header-spacer {
   height: 48px;
   flex-shrink: 0;
@@ -520,6 +534,16 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   padding-bottom: 90px;
+}
+
+@media (min-width: 768px) {
+  .settings-flow { max-width: 720px; }
+}
+@media (min-width: 1024px) {
+  .settings-flow { max-width: 1100px; }
+}
+@media (min-width: 1440px) {
+  .settings-flow { max-width: 1400px; }
 }
 
 .settings-card {

@@ -221,6 +221,35 @@ onMounted(() => {
   align-items: center;
   max-width: 100vw;
 }
+
+@media (min-width: 768px) {
+  .page-header {
+    max-width: 720px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .header-right {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-header {
+    max-width: 1100px;
+  }
+  .header-right {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page-header {
+    max-width: 1400px;
+  }
+  .header-right {
+    max-width: 1400px;
+  }
+}
 .page-title {
   font-size: 22px;
   font-weight: 700;
@@ -264,7 +293,8 @@ onMounted(() => {
   background-repeat: no-repeat;
   background-position: right 10px center;
 }
-.apple-select-sm:active {
+.apple-select-sm:active,
+.apple-select-sm:hover {
   background-color: #E8E8ED;
 }
 
@@ -276,18 +306,36 @@ onMounted(() => {
 
 /* 列表 */
 .list-wrapper {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
   width: 100%;
   max-width: var(--max-content);
   padding-bottom: 90px;
 }
 
+@media (min-width: 768px) {
+  .list-wrapper {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list-wrapper {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .list-wrapper {
+    max-width: 1400px;
+  }
+}
+
 /* 骨架屏 */
 .skeleton-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
 }
 .skeleton-card {
