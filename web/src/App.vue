@@ -1,7 +1,7 @@
 <template>
   <router-view />
 
-  <nav class="bottom-tabbar" v-show="!$route.meta?.hideNavbar">
+  <nav class="bottom-tabbar" v-show="!$route.meta?.hideNavbar && !$route.path.startsWith('/pc')">
     <router-link to="/mobile" class="tab-item" active-class="active" exact-active-class="active">
       <span class="material-symbols-outlined tab-icon-g">tv</span>
       <span class="tab-text">组播源</span>
@@ -33,9 +33,9 @@
   width: calc(100% - 32px);
   max-width: 358px;
   height: 60px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.02);

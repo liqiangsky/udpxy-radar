@@ -27,8 +27,19 @@ const routes = [
     path: '/mobile/logs',
     component: () => import('@/mobile/routes/ServerLogs.vue'), // 后台日志页
     meta: { hideNavbar: true }
-  }
-  // 以后做 web 端时，在这里直接加 /web 路由即可，两套完全独立
+  },
+  // PC 路由组（使用独立 Layout 包裹）
+  // {
+  //   path: '/pc',
+  //   component: () => import('../pc/PCLayout.vue'),
+  //   children: [
+  //     { path: '', component: () => import('../pc/routes/PCHostList.vue') },
+  //     { path: 'templates', component: () => import('../pc/routes/PCConfigTemplates.vue') },
+  //     { path: 'config', component: () => import('../pc/routes/PCScanConfig.vue') },
+  //     { path: 'settings', component: () => import('../pc/routes/PCGlobalSettings.vue') },
+  //     { path: 'logs', component: () => import('../pc/routes/PCServerLogs.vue') },
+  //   ]
+  // }
 ]
 
 const router = createRouter({
