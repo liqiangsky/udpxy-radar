@@ -15,7 +15,7 @@ from db.database import init_db, init_cache_db, get_setting
 from services.hf_sync import pull_from_hf, push_to_hf
 from services.log_buffer import setup_log_buffer
 from core.engine import janitor
-from routers import settings, configs, iptv, templates, cron  # 导入拆分出去的路由模块
+from routers import settings, configs, iptv, templates, cron, auth  # 导入拆分出去的路由模块
 
 # 日志配置
 logging.basicConfig(
@@ -69,6 +69,7 @@ async def check_api_token(request, call_next):
 
 
 # 🔌 像插排一样，把各个子路由插进来
+app.include_router(auth.router, prefix="/api", tags=["认证"])
 app.include_router(settings.router, prefix="/api", tags=["全局设置"])
 app.include_router(templates.router, prefix="/api", tags=["配置模板"])
 app.include_router(configs.router, prefix="/api", tags=["扫描配置"])
