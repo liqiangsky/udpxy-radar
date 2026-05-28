@@ -97,8 +97,8 @@
           </div>
 
           <div class="form-item">
-            <label>目标地址（IP段/订阅URL/查询条件）</label>
-            <input v-model="formData.targetAddress" type="text" placeholder="rtp://225.1.1.1:1234 或 udpxy country:CN" required />
+            <label>目标地址（IP段）</label>
+            <input v-model="formData.targetAddress" type="text" placeholder="如：225.1.1.1:1234" required />
           </div>
 
           <div class="form-buttons">
