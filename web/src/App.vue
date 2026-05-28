@@ -1,7 +1,7 @@
 <template>
   <router-view />
 
-  <nav class="bottom-tabbar">
+  <nav class="bottom-tabbar" v-show="!$route.meta?.hideNavbar">
     <router-link to="/mobile" class="tab-item" active-class="active" exact-active-class="active">
       <span class="material-symbols-outlined tab-icon-g">tv</span>
       <span class="tab-text">组播源</span>
