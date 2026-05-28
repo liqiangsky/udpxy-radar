@@ -114,6 +114,16 @@ def api_get_iptv_pool(
 
             last_seen = ""
 
+        try:
+
+            create_time = datetime.fromtimestamp(
+                row["createTime"] / 1000.0
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
+        except Exception:
+
+            create_time = ""
+
         #
         # 节点信息
         #
@@ -161,6 +171,7 @@ def api_get_iptv_pool(
             #
             # 时间
             #
+            "createTime": create_time,
             "lastSeen": last_seen,
             "updateTime": row["updateTime"]
         })

@@ -36,10 +36,18 @@
       </div>
 
       <div class="grid-item time-column full-width">
-        <span class="badge-lbl">记录</span>
+        <span class="badge-lbl">发现</span>
         <div class="time-wrapper">
           <span class="material-symbols-outlined icon-g">history</span>
-          <span class="badge-txt color-gray font-mono">{{ item.time }}</span>
+          <span class="badge-txt color-gray font-mono">{{ item.createTime }}</span>
+        </div>
+      </div>
+
+      <div class="grid-item time-column full-width">
+        <span class="badge-lbl">验证</span>
+        <div class="time-wrapper">
+          <span class="material-symbols-outlined icon-g">update</span>
+          <span class="badge-txt color-gray font-mono">{{ item.lastSeen }}</span>
         </div>
       </div>
     </div>

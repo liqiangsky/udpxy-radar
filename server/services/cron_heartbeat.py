@@ -22,6 +22,8 @@ def cron_field_match(pattern: str, value: str) -> bool:
         v = int(value)
         s = int(step)
         if base == "*":
+            # */n 表示从 0 开始每 n 步（0/n, n, 2n, 3n...）
+            # 但 day-of-month 从 1 开始，需要特殊处理
             return v % s == 0
         else:
             return v >= int(base) and (v - int(base)) % s == 0

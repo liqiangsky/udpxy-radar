@@ -126,6 +126,12 @@ const loadPool = async () => {
           channelName: item.channelName,
 
           //
+          // 时间
+          //
+          createTime: item.createTime,
+          lastSeen: item.lastSeen,
+
+          //
           // 来源
           //
           sourceType: item.sourceType,
