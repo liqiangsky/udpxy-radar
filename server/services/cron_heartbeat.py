@@ -203,15 +203,15 @@ async def handle_heartbeat() -> dict:
 
     # GitHub UserResult 定时拉取
     github_user_result_fetch_cron = get_setting("github_user_result_fetch_cron", "")
-    if cron_match(github_user_result_fetch_cron, cron_now) and _should_exec("github_user_result_fetch", now) and get_setting("github_enabled", "1") == "1":
-        logger.info(f"⏰ [心跳触发] GitHub UserResult 定时拉取 -> cron: {github_user_result_fetch_cron}")
+    if cron_match(github_user_result_fetch_cron, cron_now) and _should_exec("github_fetch", now) and get_setting("github_enabled", "1") == "1":
+        logger.info(f"⏰ [心跳触发] GitHub 定时拉取 -> cron: {github_user_result_fetch_cron}")
         from services.github import fetch_github_user_result_sources
         timeout = int(get_setting("timeout", "2000")) / 1000.0
         connector = aiohttp.TCPConnector(limit=128, ssl=False)
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout * 2), connector=connector) as s:
             sources = await fetch_github_user_result_sources(session=s)
         if sources:
-            cache_sources("github_user_result", sources)
-        triggered.append({"task": "github_user_result_fetch"})
+            cache_sources("github", sources)
+        triggered.append({"task": "github_fetch"})
 
     return triggered

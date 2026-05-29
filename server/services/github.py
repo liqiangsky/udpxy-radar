@@ -296,7 +296,7 @@ async def fetch_github_user_result_sources(
                             delay = int((asyncio.get_event_loop().time() - start) * 1000)
                             return {
                                 "host": h,
-                                "sourceType": "github_user_result",
+                                "sourceType": "github",
                                 "sourceName": "GitHub",
                                 "delay": delay,
                                 "protocol": entry["protocol"],

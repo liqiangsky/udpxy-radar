@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
-from db.database import get_db, get_setting
+from db.database import get_db, get_cache_db, get_setting
 from db.models import GlobalSettingsUpdate
 from services.log_buffer import get_recent_logs
 import hashlib
@@ -134,10 +134,45 @@ async def api_manual_github_user_result_fetch(req: GitHubUserResultFetchRequest)
         sources = await fetch_github_user_result_sources(session=session)
 
     if sources:
-        cache_sources("github_user_result", sources)
+        cache_sources("github", sources)
 
     return {
         "ok": True,
         "fetched": len(sources),
         "hosts": [s["host"] for s in sources]
     }
+
+
+@router.get("/cache/stats")
+def api_source_cache_stats():
+    """
+    查看 source_cache 各数据源统计信息。
+    """
+    with get_cache_db() as conn:
+        rows = conn.execute(
+            "SELECT sourceType, COUNT(*) as count FROM source_cache GROUP BY sourceType"
+        ).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM source_cache").fetchone()[0]
+    return {
+        "total": total,
+        "bySource": [dict(r) for r in rows]
+    }
+
+
+@router.post("/cache/clear")
+def api_clear_source_cache(
+    source_type: str = Query(None, description="指定数据源类型，不传则清空所有")
+):
+    """
+    清理 source_cache 表中的缓存数据。
+    传入 sourceType 只清指定源，不传则清空整表。
+    """
+    with get_cache_db() as conn:
+        if source_type:
+            count = conn.execute("SELECT COUNT(*) FROM source_cache WHERE sourceType=?", (source_type,)).fetchone()[0]
+            conn.execute("DELETE FROM source_cache WHERE sourceType=?", (source_type,))
+        else:
+            count = conn.execute("SELECT COUNT(*) FROM source_cache").fetchone()[0]
+            conn.execute("DELETE FROM source_cache")
+        conn.execute("VACUUM")
+    return {"ok": True, "deleted": count}
