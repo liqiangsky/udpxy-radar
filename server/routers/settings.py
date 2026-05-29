@@ -174,5 +174,11 @@ def api_clear_source_cache(
         else:
             count = conn.execute("SELECT COUNT(*) FROM source_cache").fetchone()[0]
             conn.execute("DELETE FROM source_cache")
-        conn.execute("VACUUM")
+    # VACUUM 不能在事务中执行，需单独建连接
+    import sqlite3
+    conn2 = sqlite3.connect("source_cache.db")
+    try:
+        conn2.execute("VACUUM")
+    finally:
+        conn2.close()
     return {"ok": True, "deleted": count}
