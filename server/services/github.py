@@ -185,19 +185,20 @@ async def fetch_github_user_result_sources(
     # 搜索关键词（可配置）
     search_query = get_setting("github_user_result_query", "filename:result.txt path:output/ipv4")
 
+    # 收集所有文件 item：URL 列表 + 关键词搜索结果都要执行
     file_items = []
 
+    # 1) 自定义 URL 列表
     if custom_urls:
-        # 使用自定义 URL 列表直接下载
         logger.info(f"📄 [GitHub UserResult] 使用自定义 URL 列表: {len(custom_urls)} 个")
         for url in custom_urls:
             file_items.append({"html_url": url.replace("raw.githubusercontent.com", "github.com").replace("/raw/", "/blob/")})
-    elif search_query.startswith("https://"):
-        # 搜索关键词是完整 URL，直接下载
+
+    # 2) 关键词搜索（与 URL 列表不互斥，两者可共存）
+    if search_query.startswith("https://"):
         logger.info(f"📄 [GitHub UserResult] 直接使用 URL: {search_query}")
-        file_items = [{"html_url": search_query.replace("raw.githubusercontent.com", "github.com").replace("/raw/", "/blob/")}]
-    else:
-        # Step 1: 搜索文件
+        file_items.append({"html_url": search_query.replace("raw.githubusercontent.com", "github.com").replace("/raw/", "/blob/")})
+    elif search_query:
         params = {"q": search_query, "per_page": "30", "sort": "updated", "order": "desc"}
 
         page = 1
