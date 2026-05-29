@@ -161,25 +161,17 @@ def api_source_cache_stats():
 
 @router.post("/cache/clear")
 def api_clear_source_cache(
-    source_type: str = Query(None, description="指定数据源类型，不传则清空所有")
+    sourceType: str = Query(None, alias="sourceType", description="指定数据源类型，不传则清空所有")
 ):
     """
     清理 source_cache 表中的缓存数据。
     传入 sourceType 只清指定源，不传则清空整表。
     """
     with get_cache_db() as conn:
-        if source_type:
-            count = conn.execute("SELECT COUNT(*) FROM source_cache WHERE sourceType=?", (source_type,)).fetchone()[0]
-            conn.execute("DELETE FROM source_cache WHERE sourceType=?", (source_type,))
+        if sourceType:
+            count = conn.execute("SELECT COUNT(*) FROM source_cache WHERE sourceType=?", (sourceType,)).fetchone()[0]
+            conn.execute("DELETE FROM source_cache WHERE sourceType=?", (sourceType,))
         else:
             count = conn.execute("SELECT COUNT(*) FROM source_cache").fetchone()[0]
             conn.execute("DELETE FROM source_cache")
-    # VACUUM 释放文件空间，使用 CACHE_DB_PATH 正确路径
-    from db.database import CACHE_DB_PATH
-    import sqlite3
-    conn2 = sqlite3.connect(CACHE_DB_PATH)
-    try:
-        conn2.execute("VACUUM")
-    finally:
-        conn2.close()
     return {"ok": True, "deleted": count}
