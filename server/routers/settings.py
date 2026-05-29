@@ -84,9 +84,6 @@ def api_update_settings(data: GlobalSettingsUpdate):
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('hf_sync_cron', ?)", (data.hfSyncCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('scan_cron', ?)", (data.scanCron,))
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('callback_token', ?)", (data.callbackToken,))
-    from core.engine import janitor
-    janitor.stop()
-    janitor.start()
     return {"ok": True}
 
 
