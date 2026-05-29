@@ -3,12 +3,12 @@ import os
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("DB_PATH", "udpxy_radar.db")
-# source_cache + iptv_list 独立 DB 文件，删除主库时缓存和活源数据不丢失
 CACHE_DB_PATH = os.getenv("CACHE_DB_PATH", "source_cache.db")
+IPTV_DB_PATH = os.getenv("IPTV_DB_PATH", "iptv_list.db")
 
 
 def init_cache_db():
-    """初始化独立的数据缓存数据库（source_cache + iptv_list）"""
+    """初始化源缓存数据库（source_cache 表）"""
     conn = sqlite3.connect(CACHE_DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -22,7 +22,17 @@ def init_cache_db():
             createdAt TEXT DEFAULT (datetime('now'))
         );
         CREATE UNIQUE INDEX IF NOT EXISTS idx_source_cache_unique ON source_cache(sourceType, host);
+    """)
+    conn.commit()
+    conn.close()
 
+
+def init_iptv_db():
+    """初始化活源池数据库（iptv_list 表），自动从 source_cache.db 迁移历史数据"""
+    conn = sqlite3.connect(IPTV_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS iptv_list (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             host TEXT NOT NULL,
@@ -45,6 +55,38 @@ def init_cache_db():
         CREATE INDEX IF NOT EXISTS idx_region_operator ON iptv_list(region, operator);
         CREATE INDEX IF NOT EXISTS idx_geo ON iptv_list(geoRegion, geoOperator);
     """)
+
+    # 数据迁移：如果 iptv_list 在 source_cache.db 中存在但当前库为空，则迁移
+    count = conn.execute("SELECT COUNT(*) FROM iptv_list").fetchone()[0]
+    if count == 0:
+        try:
+            src = sqlite3.connect(CACHE_DB_PATH)
+            src.row_factory = sqlite3.Row
+            tables = src.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='iptv_list'").fetchall()
+            if tables:
+                rows = src.execute("SELECT * FROM iptv_list").fetchall()
+                if rows:
+                    for row in rows:
+                        conn.execute("""
+                            INSERT OR IGNORE INTO iptv_list (
+                                id, host, ip, port, sourceType, sourceName,
+                                region, operator, geoRegion, geoOperator,
+                                delay, protocol, target, channelName,
+                                createTime, updateTime
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (row["id"], row["host"], row["ip"], row["port"],
+                              row["sourceType"], row["sourceName"],
+                              row["region"], row["operator"],
+                              row["geoRegion"], row["geoOperator"],
+                              row["delay"], row["protocol"], row["target"],
+                              row["channelName"], row["createTime"], row["updateTime"]))
+                    conn.commit()
+                    logger = logging.getLogger("udpxy_radar")
+                    logger.info(f"📦 [数据迁移] {len(rows)} 条活源数据已从 source_cache.db 迁移至 iptv_list.db")
+            src.close()
+        except Exception as e:
+            logging.getLogger("udpxy_radar").warning(f"⚠️ [数据迁移] 迁移失败: {e}")
+
     conn.commit()
     conn.close()
 
@@ -177,9 +219,34 @@ def get_db():
 
 @contextmanager
 def get_cache_db():
-    """缓存数据库连接管理（source_cache + iptv_list）"""
+    """缓存数据库连接管理（source_cache 表）"""
     conn = sqlite3.connect(
         CACHE_DB_PATH,
+        timeout=30,
+        check_same_thread=False
+    )
+
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+
+    try:
+        yield conn
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_iptv_db():
+    """活源池数据库连接管理（iptv_list 表）"""
+    conn = sqlite3.connect(
+        IPTV_DB_PATH,
         timeout=30,
         check_same_thread=False
     )

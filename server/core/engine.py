@@ -6,7 +6,7 @@ import logging
 
 from typing import List
 
-from db.database import get_db, get_cache_db, get_setting
+from db.database import get_db, get_cache_db, get_iptv_db, get_setting
 from core.status import task_runner
 from services.github import search_github_sources
 from services.ozone import fetch_ozone_sources
@@ -169,7 +169,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                 #
                                 # 去重检查：如果 host 已在 iptv_list 中则跳过
                                 #
-                                with get_cache_db() as conn:
+                                with get_iptv_db() as conn:
                                     existing = conn.execute(
                                         "SELECT 1 FROM iptv_list WHERE host=?",
                                         (host_item,)
@@ -233,7 +233,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         # 入 iptv_list 活源池
                         _db_write_lock.acquire()
                         try:
-                            with get_cache_db() as conn:
+                            with get_iptv_db() as conn:
                                 for item in enriched:
                                     host_item = item["host"]
                                     if ":" in host_item:
@@ -253,13 +253,6 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                         ) VALUES (
                                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                         )
-                                        ON CONFLICT(host, target, channelName)
-                                        DO UPDATE SET
-                                            delay = excluded.delay,
-                                            updateTime = excluded.updateTime,
-                                            geoRegion = excluded.geoRegion,
-                                            geoOperator = excluded.geoOperator
-                                    """, (
                                         host_item, ip_val, int(port_val),
                                         item["sourceType"], item["sourceName"],
                                         config.get("templateRegion", ""),

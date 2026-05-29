@@ -44,6 +44,7 @@ ENV PYTHONUNBUFFERED=1
 # 2. 将数据库路径重定向至具备可写权限的目录
 ENV DB_PATH=/app/data/udpxy_radar.db
 ENV CACHE_DB_PATH=/app/data/source_cache.db
+ENV IPTV_DB_PATH=/app/data/iptv_list.db
 # 3. 默认监听端口
 ENV PORT=7860
 
