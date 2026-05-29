@@ -44,6 +44,7 @@ export const useSettingsStore = defineStore('settings', () => {
     if (payload.configDelay !== undefined) data.value.engine.configDelay = payload.configDelay
     if (payload.scanCron !== undefined) data.value.scheduling.scanCron = payload.scanCron
     if (payload.janitorCron !== undefined) data.value.scheduling.janitorCron = payload.janitorCron
+    if (payload.hfSyncCron !== undefined) data.value.scheduling.hfSyncCron = payload.hfSyncCron
     if (payload.callbackToken !== undefined) {
       data.value.security.callbackToken = payload.callbackToken
     }

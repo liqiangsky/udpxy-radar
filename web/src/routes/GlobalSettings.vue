@@ -324,6 +324,27 @@
           <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。</p>
         </div>
 
+        <div class="form-group">
+          <label>HF 数据同步 (Cron)</label>
+          <input
+            v-model="settings.scheduling.hfSyncCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行，建议 */5 * * * *"
+          />
+          <p class="field-desc">Cron 表达式：分 时 日 月 周。将三库同步至 HuggingFace Datasets。</p>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          :disabled="hfSyncing"
+          @click="handleHfSync"
+        >
+          <span class="material-symbols-outlined" style="font-size: 16px; margin-right: 4px">cloud_upload</span>
+          {{ hfSyncing ? '同步中...' : '手动同步到 HF' }}
+        </button>
+
         <div class="cron-help">
           <details>
             <summary>📖 Cron 表达式帮助</summary>
@@ -493,6 +514,7 @@ const daydaymapResult = ref(0)
 
 const hunterFetching = ref(false)
 const hunterResult = ref(0)
+const hfSyncing = ref(false)
 
 const handleHunterManualFetch = async () => {
   if (!settings.hunter.enabled) {
@@ -528,6 +550,18 @@ const handleDaydaymapManualFetch = async () => {
   }
 }
 
+const handleHfSync = async () => {
+  hfSyncing.value = true
+  try {
+    await request.post('/cron/hf-sync')
+    toast.success('已同步至 HuggingFace Datasets')
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '同步失败')
+  } finally {
+    hfSyncing.value = false
+  }
+}
+
 const handleSave = async () => {
   saving.value = true
   try {
@@ -551,6 +585,7 @@ const handleSave = async () => {
       configDelay: settings.engine.configDelay,
       scanCron: settings.scheduling.scanCron,
       janitorCron: settings.scheduling.janitorCron,
+      hfSyncCron: settings.scheduling.hfSyncCron,
       callbackToken: settings.security.callbackToken
     }
     await settingsStore.update(payload)

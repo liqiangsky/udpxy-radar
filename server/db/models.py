@@ -22,6 +22,7 @@ class GlobalSettingsUpdate(BaseModel):
     githubUserResultFetchCron: str = ""
     githubUserResultQuery: str = "filename:result.txt path:output/ipv4"
     githubUserResultUrls: str = ""
+    hfSyncCron: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

@@ -215,8 +215,10 @@ async def handle_heartbeat() -> dict:
             cache_sources("github", sources)
         triggered.append({"task": "github_fetch"})
 
-    # HF 数据同步（每 5 分钟一次，_sync_file 内部有 mtime 防抖）
-    if now.minute % 5 == 0 and _should_exec("hf_sync", now):
+    # HF 数据同步 cron
+    hf_sync_cron = get_setting("hf_sync_cron", "")
+    if cron_match(hf_sync_cron, cron_now) and _should_exec("hf_sync", now):
+        logger.info(f"⏰ [心跳触发] HF 定时同步 -> cron: {hf_sync_cron}")
         push_to_hf()
         triggered.append({"task": "hf_sync"})
 

@@ -144,7 +144,8 @@ def init_db():
         "concurrency": "64",
         "timeout": "2000",
         "config_delay": "3",
-        "janitor_cron": ""
+        "janitor_cron": "",
+        "hf_sync_cron": ""
     }
 
     for k, v in default_settings.items():
