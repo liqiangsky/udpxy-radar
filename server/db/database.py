@@ -1,6 +1,5 @@
 import sqlite3
 import os
-import logging
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("DB_PATH", "udpxy_radar.db")
@@ -29,7 +28,7 @@ def init_cache_db():
 
 
 def init_iptv_db():
-    """初始化活源池数据库（iptv_list 表），自动从 source_cache.db 迁移历史数据"""
+    """初始化活源池数据库（iptv_list 表）"""
     conn = sqlite3.connect(IPTV_DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -56,38 +55,6 @@ def init_iptv_db():
         CREATE INDEX IF NOT EXISTS idx_region_operator ON iptv_list(region, operator);
         CREATE INDEX IF NOT EXISTS idx_geo ON iptv_list(geoRegion, geoOperator);
     """)
-
-    # 数据迁移：如果 iptv_list 在 udpxy_radar.db 中存在但当前库为空，则迁移
-    count = conn.execute("SELECT COUNT(*) FROM iptv_list").fetchone()[0]
-    if count == 0:
-        try:
-            src = sqlite3.connect(DB_PATH)
-            src.row_factory = sqlite3.Row
-            tables = src.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='iptv_list'").fetchall()
-            if tables:
-                rows = src.execute("SELECT * FROM iptv_list").fetchall()
-                if rows:
-                    for row in rows:
-                        conn.execute("""
-                            INSERT OR IGNORE INTO iptv_list (
-                                id, host, ip, port, sourceType, sourceName,
-                                region, operator, geoRegion, geoOperator,
-                                delay, protocol, target, channelName,
-                                createTime, updateTime
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (row["id"], row["host"], row["ip"], row["port"],
-                              row["sourceType"], row["sourceName"],
-                              row["region"], row["operator"],
-                              row["geoRegion"], row["geoOperator"],
-                              row["delay"], row["protocol"], row["target"],
-                              row["channelName"], row["createTime"], row["updateTime"]))
-                    conn.commit()
-                    logger = logging.getLogger("udpxy_radar")
-                    logger.info(f"📦 [数据迁移] {len(rows)} 条活源数据已从 udpxy_radar.db 迁移至 iptv_list.db")
-            src.close()
-        except Exception as e:
-            logging.getLogger("udpxy_radar").warning(f"⚠️ [数据迁移] 迁移失败: {e}")
-
     conn.commit()
     conn.close()
 
@@ -142,69 +109,6 @@ def init_db():
             expires_at TEXT NOT NULL
         );
     """)
-
-    # 删除旧错误索引
-    conn.execute("DROP INDEX IF EXISTS idx_unique_source")
-
-    # 迁移历史 iptv_list 数据到 iptv_list.db（如果存在）
-    existing_iptv = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='iptv_list'"
-    ).fetchall()
-    if existing_iptv:
-        try:
-            rows = conn.execute("SELECT * FROM iptv_list").fetchall()
-            if rows:
-                # 确保 iptv_list.db 已初始化
-                dest = sqlite3.connect(IPTV_DB_PATH)
-                dest.row_factory = sqlite3.Row
-                dest.executescript("""
-                    CREATE TABLE IF NOT EXISTS iptv_list (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        host TEXT NOT NULL,
-                        ip TEXT NOT NULL,
-                        port INTEGER NOT NULL,
-                        sourceType TEXT DEFAULT '',
-                        sourceName TEXT DEFAULT '',
-                        region TEXT NOT NULL,
-                        operator TEXT NOT NULL,
-                        geoRegion TEXT DEFAULT '',
-                        geoOperator TEXT DEFAULT '',
-                        delay INTEGER NOT NULL,
-                        protocol TEXT NOT NULL,
-                        target TEXT NOT NULL,
-                        channelName TEXT NOT NULL,
-                        createTime INTEGER NOT NULL,
-                        updateTime INTEGER NOT NULL
-                    );
-                    CREATE UNIQUE INDEX IF NOT EXISTS idx_iptv_unique ON iptv_list(host, target, channelName);
-                    CREATE INDEX IF NOT EXISTS idx_region_operator ON iptv_list(region, operator);
-                    CREATE INDEX IF NOT EXISTS idx_geo ON iptv_list(geoRegion, geoOperator);
-                """)
-                dest_count = dest.execute("SELECT COUNT(*) FROM iptv_list").fetchone()[0]
-                if dest_count == 0:
-                    for row in rows:
-                        dest.execute("""
-                            INSERT OR IGNORE INTO iptv_list (
-                                id, host, ip, port, sourceType, sourceName,
-                                region, operator, geoRegion, geoOperator,
-                                delay, protocol, target, channelName,
-                                createTime, updateTime
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (row["id"], row["host"], row["ip"], row["port"],
-                              row["sourceType"], row["sourceName"],
-                              row["region"], row["operator"],
-                              row["geoRegion"], row["geoOperator"],
-                              row["delay"], row["protocol"], row["target"],
-                              row["channelName"], row["createTime"], row["updateTime"]))
-                    dest.commit()
-                    logger = logging.getLogger("udpxy_radar")
-                    logger.info(f"📦 [数据迁移] {len(rows)} 条活源数据已从 udpxy_radar.db 迁移至 iptv_list.db")
-                dest.close()
-        except Exception as e:
-            logging.getLogger("udpxy_radar").warning(f"⚠️ [数据迁移] 迁移失败: {e}")
-
-    # 删除旧错误索引
-    conn.execute("DROP INDEX IF EXISTS idx_unique_source")
 
     # 初始化默认密码
     row = conn.execute(
