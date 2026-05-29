@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import logging
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("DB_PATH", "udpxy_radar.db")
