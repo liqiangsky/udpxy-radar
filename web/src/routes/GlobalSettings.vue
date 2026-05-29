@@ -337,12 +337,12 @@
 
         <button
           type="button"
-          class="btn btn-outline"
-          :disabled="hfSyncing"
+          class="fetch-btn-mini"
+          :class="{ fetching: hfSyncing }"
           @click="handleHfSync"
         >
-          <span class="material-symbols-outlined" style="font-size: 16px; margin-right: 4px">cloud_upload</span>
-          {{ hfSyncing ? '同步中...' : '手动同步到 HF' }}
+          <span class="material-symbols-outlined fetch-icon" :class="{ spin: hfSyncing }">cloud_upload</span>
+          <span>{{ hfSyncing ? '同步中...' : '手动同步到 HF' }}</span>
         </button>
 
         <div class="cron-help">
@@ -784,12 +784,12 @@ input:checked + .slider:before { transform: translateX(18px); }
   background: var(--color-blue);
   color: #fff;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: var(--radius-input);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
@@ -805,8 +805,8 @@ input:checked + .slider:before { transform: translateX(18px); }
   pointer-events: none;
 }
 .fetch-icon {
-  font-size: 18px !important;
-  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  font-size: 16px !important;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }
 .spin {
   animation: spin 1s linear infinite;
