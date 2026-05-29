@@ -19,6 +19,9 @@ class GlobalSettingsUpdate(BaseModel):
     hunterEnabled: bool = True
     hunterApiKey: str = ""
     hunterFetchCron: str = ""
+    githubUserResultFetchCron: str = ""
+    githubUserResultQuery: str = "filename:result.txt path:output/ipv4"
+    githubUserResultUrls: str = ""
 
 class TemplateCreateOrUpdate(BaseModel):
     name: str

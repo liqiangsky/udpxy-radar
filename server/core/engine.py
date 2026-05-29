@@ -98,12 +98,12 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                     data_sources = [s.strip() for s in raw_ds.split(',') if s.strip()]
                 else:
                     data_sources = []
-                    for ds_name in ("github", "ozone", "zoomeye", "daydaymap", "hunter"):
+                    for ds_name in ("github", "ozone", "zoomeye", "daydaymap", "hunter", "github_user_result"):
                         setting_key = f"{ds_name}_enabled"
                         if get_setting(setting_key, "0" if ds_name != "github" else "1") == "1":
                             data_sources.append(ds_name)
 
-                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap", "hunter": "Hunter"}
+                source_name_map = {"github": "GitHub", "ozone": "零零信安", "zoomeye": "ZoomEye", "daydaymap": "DayDayMap", "hunter": "Hunter", "github_user_result": "GitHub"}
 
                 candidate_hosts = []  # list of (host, source_type, source_name)
                 for ds in data_sources:
@@ -127,6 +127,11 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         region = config.get("templateRegion", "")
                         hosts = get_cached_hosts("hunter", region)
                         logger.info(f"📡 [hunter] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
+                        candidate_hosts.extend((h, ds, ds_name) for h in hosts)
+                    elif ds == "github_user_result":
+                        region = config.get("templateRegion", "")
+                        hosts = get_cached_hosts("github_user_result", region)
+                        logger.info(f"📡 [GitHub UserResult] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
                         candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "github":
                         hosts = await search_github_sources(

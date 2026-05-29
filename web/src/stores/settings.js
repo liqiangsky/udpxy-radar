@@ -27,6 +27,9 @@ export const useSettingsStore = defineStore('settings', () => {
     if (!data.value) return data.value
     if (payload.githubEnabled !== undefined) data.value.github.enabled = payload.githubEnabled
     if (payload.githubToken !== undefined) data.value.github.token = payload.githubToken
+    if (payload.githubUserResultFetchCron !== undefined) data.value.github.userResultFetchCron = payload.githubUserResultFetchCron
+    if (payload.githubUserResultQuery !== undefined) data.value.github.userResultQuery = payload.githubUserResultQuery
+    if (payload.githubUserResultUrls !== undefined) data.value.github.userResultUrls = payload.githubUserResultUrls
     if (payload.ozoneEnabled !== undefined) data.value.ozone.enabled = payload.ozoneEnabled
     if (payload.ozoneFetchCron !== undefined) data.value.ozone.fetchCron = payload.ozoneFetchCron
     if (payload.zoomeyeEnabled !== undefined) data.value.zoomeye.enabled = payload.zoomeyeEnabled
