@@ -253,6 +253,13 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                         ) VALUES (
                                             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                                         )
+                                        ON CONFLICT(host, target, channelName)
+                                        DO UPDATE SET
+                                            delay = excluded.delay,
+                                            updateTime = excluded.updateTime,
+                                            geoRegion = excluded.geoRegion,
+                                            geoOperator = excluded.geoOperator
+                                    """, (
                                         host_item, ip_val, int(port_val),
                                         item["sourceType"], item["sourceName"],
                                         config.get("templateRegion", ""),
