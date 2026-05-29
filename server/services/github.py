@@ -300,8 +300,6 @@ async def fetch_github_user_result_sources(
                                 "sourceName": "GitHub",
                                 "delay": delay,
                                 "protocol": entry["protocol"],
-                                "geoRegion": "",
-                                "geoOperator": "",
                             }
             except Exception:
                 pass
@@ -313,4 +311,11 @@ async def fetch_github_user_result_sources(
     valid_hosts = [r for r in results if r is not None]
     logger.info(f"✅ [GitHub UserResult] 验证完成，{len(valid_hosts)}/{len(host_map)} 个可用")
 
-    return valid_hosts
+    if not valid_hosts:
+        return []
+
+    # Step 4: geoip 富化
+    from services.geoip import enrich_geo_batch
+    enriched = await enrich_geo_batch(session, valid_hosts)
+
+    return enriched
