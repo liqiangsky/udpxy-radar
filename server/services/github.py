@@ -236,6 +236,7 @@ async def fetch_github_user_result_sources(
 
     # Step 2: 解析文件内容，提取 URL，按 HOST 去重
     host_map = {}
+    new_hosts = []  # 记录新发现的完整地址
 
     for item in file_items:
         try:
@@ -246,9 +247,12 @@ async def fetch_github_user_result_sources(
             )
             async with session.get(raw_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                 if resp.status != 200:
+                    logger.warning(f"⚠️ [GitHub UserResult] 文件下载失败: {raw_url} (HTTP {resp.status})")
                     continue
                 content = await resp.text()
 
+                found = 0
+                file_addrs = []  # 当前文件新发现的地址
                 for match in _URL_PATTERN.finditer(content):
                     host_raw = match.group(1)
                     protocol = match.group(2).lower()
@@ -265,8 +269,20 @@ async def fetch_github_user_result_sources(
                             "protocol": protocol,
                             "target": target,
                         }
+                        full_addr = f"http://{host_raw}/{protocol}/{target}"
+                        file_addrs.append(full_addr)
+                        new_hosts.append(full_addr)
+                        found += 1
+
+                if found > 0:
+                    logger.info(f"📄 [GitHub UserResult] {raw_url} -> 发现 {found} 个新源:")
+                    for addr in file_addrs:
+                        logger.info(f"    {addr}")
+                else:
+                    logger.info(f"📄 [GitHub UserResult] {raw_url} -> 无新 HOST")
         except Exception as e:
-            logger.debug(f"⚠️ [GitHub UserResult] 解析文件失败: {item.get('html_url', '?')} -> {e}")
+            logger.warning(f"⚠️ [GitHub UserResult] 解析文件失败: {item.get('html_url', '?')} -> {e}")
+            continue
 
     logger.info(f"✅ [GitHub UserResult] 解析完成，去重后 {len(host_map)} 个唯一 HOST")
 
