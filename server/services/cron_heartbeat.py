@@ -11,6 +11,7 @@ from db.database import get_db, get_cache_db, get_iptv_db, get_setting
 from core.engine import trigger_background_queue
 from core.status import task_runner
 from services.source_cache import cache_sources
+from services.hf_sync import push_to_hf
 
 logger = logging.getLogger("udpxy_radar")
 
@@ -213,5 +214,10 @@ async def handle_heartbeat() -> dict:
         if sources:
             cache_sources("github", sources)
         triggered.append({"task": "github_fetch"})
+
+    # HF 数据同步（每 5 分钟一次，_sync_file 内部有 mtime 防抖）
+    if now.minute % 5 == 0 and _should_exec("hf_sync", now):
+        push_to_hf()
+        triggered.append({"task": "hf_sync"})
 
     return triggered
