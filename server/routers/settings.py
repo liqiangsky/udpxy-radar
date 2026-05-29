@@ -174,4 +174,12 @@ def api_clear_source_cache(
         else:
             count = conn.execute("SELECT COUNT(*) FROM source_cache").fetchone()[0]
             conn.execute("DELETE FROM source_cache")
+    # VACUUM 释放文件空间，使用 CACHE_DB_PATH 正确路径
+    from db.database import CACHE_DB_PATH
+    import sqlite3
+    conn2 = sqlite3.connect(CACHE_DB_PATH)
+    try:
+        conn2.execute("VACUUM")
+    finally:
+        conn2.close()
     return {"ok": True, "deleted": count}
