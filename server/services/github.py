@@ -278,8 +278,6 @@ async def fetch_github_user_result_sources(
                     logger.info(f"📄 [GitHub UserResult] {raw_url} -> 发现 {found} 个新源:")
                     for addr in file_addrs:
                         logger.info(f"    {addr}")
-                else:
-                    logger.info(f"📄 [GitHub UserResult] {raw_url} -> 无新 HOST")
         except Exception as e:
             logger.warning(f"⚠️ [GitHub UserResult] 解析文件失败: {item.get('html_url', '?')} -> {e}")
             continue
