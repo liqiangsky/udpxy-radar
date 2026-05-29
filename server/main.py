@@ -14,7 +14,6 @@ import logging
 from db.database import init_db, init_cache_db, init_iptv_db, get_setting
 from services.hf_sync import pull_from_hf, push_to_hf
 from services.log_buffer import setup_log_buffer
-from core.engine import janitor
 from routers import settings, configs, iptv, templates, cron, auth  # 导入拆分出去的路由模块
 
 # 日志配置
@@ -32,10 +31,8 @@ async def system_lifespan(app: FastAPI):
     init_db()
     init_cache_db()
     init_iptv_db()
-    janitor.start()
     yield
-    # 关闭：安全退出，同步备份
-    janitor.stop()
+    # 关闭：同步备份
     push_to_hf()
 
 app = FastAPI(title="udpxy-radar", lifespan=system_lifespan)
