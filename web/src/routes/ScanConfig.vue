@@ -53,16 +53,20 @@
               <span class="txt color-blue">{{ dataSourceLabel(config.dataSource) }}</span>
             </div>
             <div class="grid-item">
-              <span class="lbl">模板ID</span>
-              <span class="txt color-blue">#{{ config.templateId }}</span>
-            </div>
-            <div class="grid-item full-width">
               <span class="lbl">地区</span>
               <span class="txt color-blue">{{ config.templateRegion || '-' }}</span>
             </div>
-            <div class="grid-item full-width">
+            <div class="grid-item">
               <span class="lbl">运营商</span>
               <span class="txt color-blue">{{ config.templateOperator || '-' }}</span>
+            </div>
+            <div class="grid-item full-width">
+              <span class="lbl">目标</span>
+              <span class="txt color-dark truncate">{{ config.templateTargetName || '-' }}</span>
+            </div>
+            <div class="grid-item full-width">
+              <span class="lbl">地址</span>
+              <span class="txt font-mono color-gray truncate">{{ config.templateTargetAddress || '-' }}</span>
             </div>
           </div>
 

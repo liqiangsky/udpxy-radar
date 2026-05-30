@@ -33,6 +33,11 @@ const routes = [
     path: '/logs',
     component: () => import('@/routes/ServerLogs.vue'),
     meta: { requiresAuth: true, hideNavbar: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    component: () => import('@/routes/NotFound.vue'),
+    meta: { hideNavbar: true }
   }
 ]
 

@@ -3,12 +3,12 @@ import os
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("DB_PATH", "udpxy_radar.db")
-# source_cache + iptv_list 独立 DB 文件，删除主库时缓存和活源数据不丢失
 CACHE_DB_PATH = os.getenv("CACHE_DB_PATH", "source_cache.db")
+IPTV_DB_PATH = os.getenv("IPTV_DB_PATH", "iptv_list.db")
 
 
 def init_cache_db():
-    """初始化独立的数据缓存数据库（source_cache + iptv_list）"""
+    """初始化源缓存数据库（source_cache 表）"""
     conn = sqlite3.connect(CACHE_DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -22,7 +22,17 @@ def init_cache_db():
             createdAt TEXT DEFAULT (datetime('now'))
         );
         CREATE UNIQUE INDEX IF NOT EXISTS idx_source_cache_unique ON source_cache(sourceType, host);
+    """)
+    conn.commit()
+    conn.close()
 
+
+def init_iptv_db():
+    """初始化活源池数据库（iptv_list 表）"""
+    conn = sqlite3.connect(IPTV_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS iptv_list (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             host TEXT NOT NULL,
@@ -100,9 +110,6 @@ def init_db():
         );
     """)
 
-    # 删除旧错误索引
-    conn.execute("DROP INDEX IF EXISTS idx_unique_source")
-
     # 初始化默认密码
     row = conn.execute(
         "SELECT value FROM settings WHERE key='password_hash'"
@@ -137,7 +144,8 @@ def init_db():
         "concurrency": "64",
         "timeout": "2000",
         "config_delay": "3",
-        "janitor_cron": ""
+        "janitor_cron": "",
+        "hf_sync_cron": ""
     }
 
     for k, v in default_settings.items():
@@ -177,9 +185,34 @@ def get_db():
 
 @contextmanager
 def get_cache_db():
-    """缓存数据库连接管理（source_cache + iptv_list）"""
+    """缓存数据库连接管理（source_cache 表）"""
     conn = sqlite3.connect(
         CACHE_DB_PATH,
+        timeout=30,
+        check_same_thread=False
+    )
+
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+
+    try:
+        yield conn
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_iptv_db():
+    """活源池数据库连接管理（iptv_list 表）"""
+    conn = sqlite3.connect(
+        IPTV_DB_PATH,
         timeout=30,
         check_same_thread=False
     )

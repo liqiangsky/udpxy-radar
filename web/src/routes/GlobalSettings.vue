@@ -36,6 +36,51 @@
           </div>
           <p class="field-desc">用于解除 GitHub API 速率限制，提高组播源检索成功率。</p>
         </div>
+
+        <div class="form-group">
+          <label>UserResult 自定义搜索关键词</label>
+          <input
+            v-model="settings.github.userResultQuery"
+            type="text"
+            class="input-base"
+            placeholder="filename:result.txt path:output/ipv4"
+          />
+          <p class="field-desc">GitHub Code Search 关键词，用于搜索文件。留空使用默认搜索。</p>
+        </div>
+
+        <div class="form-group">
+          <label>UserResult 自定义 URL 列表</label>
+          <textarea
+            v-model="settings.github.userResultUrls"
+            class="input-base textarea-input"
+            rows="4"
+          ></textarea>
+          <p class="field-desc">一行一个完整 raw URL，直接下载解析，不走搜索 API。</p>
+        </div>
+
+        <div class="form-group">
+          <label>UserResult 定时拉取 (Cron)</label>
+          <input
+            v-model="settings.github.userResultFetchCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行"
+          />
+          <p class="field-desc">定时从 GitHub 拉取直播源。搜索使用上方关键词，URL 列表使用上方配置。留空不执行。</p>
+        </div>
+
+        <div class="form-group">
+          <label>手动拉取测试</label>
+          <button
+            class="fetch-btn-mini"
+            :class="{ fetching: githubUserResultFetching }"
+            @click="handleGitHubUserResultFetch"
+          >
+            <span class="material-symbols-outlined fetch-icon" :class="{ spin: githubUserResultFetching }">cloud_download</span>
+            <span>{{ githubUserResultFetching ? '拉取中' : '拉取 UserResult 源数据' }}</span>
+          </button>
+          <p class="field-desc" v-if="githubUserResultResult">获取到 {{ githubUserResultResult }} 条可用数据，已写入 source_cache</p>
+        </div>
       </div>
 
       <!-- 零零信安 数据源 -->
@@ -279,6 +324,27 @@
           <p class="field-desc">Cron 表达式：分 时 日 月 周。留空不执行。</p>
         </div>
 
+        <div class="form-group">
+          <label>HF 数据同步 (Cron)</label>
+          <input
+            v-model="settings.scheduling.hfSyncCron"
+            type="text"
+            class="input-base"
+            placeholder="留空表示不执行，建议 */5 * * * *"
+          />
+          <p class="field-desc">Cron 表达式：分 时 日 月 周。将三库同步至 HuggingFace Datasets。</p>
+        </div>
+
+        <button
+          type="button"
+          class="fetch-btn-mini"
+          :class="{ fetching: hfSyncing }"
+          @click="handleHfSync"
+        >
+          <span class="material-symbols-outlined fetch-icon" :class="{ spin: hfSyncing }">cloud_upload</span>
+          <span>{{ hfSyncing ? '同步中...' : '手动同步到 HF' }}</span>
+        </button>
+
         <div class="cron-help">
           <details>
             <summary>📖 Cron 表达式帮助</summary>
@@ -371,8 +437,35 @@ const handleManualFetch = async () => {
   }
 }
 
+const githubUserResultFetching = ref(false)
+const githubUserResultResult = ref(0)
+
+const handleGitHubUserResultFetch = async () => {
+  if (!settings.github.enabled) {
+    toast.warning('请先启用 GitHub 数据源')
+    return
+  }
+  githubUserResultFetching.value = true
+  try {
+    const urls = settings.github.userResultUrls
+      .split('\n')
+      .map(u => u.trim())
+      .filter(u => u.startsWith('https://'))
+    const res = await request.post('/github-user-result/fetch', {
+      query: settings.github.userResultQuery,
+      urls: urls
+    })
+    githubUserResultResult.value = res.fetched
+    toast.success(`拉取成功：获取到 ${res.fetched} 条数据`)
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '拉取失败')
+  } finally {
+    githubUserResultFetching.value = false
+  }
+}
+
 const settings = reactive({
-  github: { enabled: true, token: '' },
+  github: { enabled: true, token: '', userResultQuery: '', userResultFetchCron: '', userResultUrls: '' },
   ozone: { enabled: false, fetchCron: '' },
   zoomeye: { enabled: false, fetchCron: '' },
   daydaymap: { enabled: false, fetchCron: '' },
@@ -421,6 +514,7 @@ const daydaymapResult = ref(0)
 
 const hunterFetching = ref(false)
 const hunterResult = ref(0)
+const hfSyncing = ref(false)
 
 const handleHunterManualFetch = async () => {
   if (!settings.hunter.enabled) {
@@ -456,12 +550,27 @@ const handleDaydaymapManualFetch = async () => {
   }
 }
 
+const handleHfSync = async () => {
+  hfSyncing.value = true
+  try {
+    await request.post('/cron/hf-sync')
+    toast.success('已同步至 HuggingFace Datasets')
+  } catch (e) {
+    toast.error(e?.response?.data?.detail || '同步失败')
+  } finally {
+    hfSyncing.value = false
+  }
+}
+
 const handleSave = async () => {
   saving.value = true
   try {
     const payload = {
       githubEnabled: settings.github.enabled,
       githubToken: settings.github.token,
+      githubUserResultFetchCron: settings.github.userResultFetchCron,
+      githubUserResultQuery: settings.github.userResultQuery,
+      githubUserResultUrls: settings.github.userResultUrls,
       ozoneEnabled: settings.ozone.enabled,
       ozoneFetchCron: settings.ozone.fetchCron,
       zoomeyeEnabled: settings.zoomeye.enabled,
@@ -476,6 +585,7 @@ const handleSave = async () => {
       configDelay: settings.engine.configDelay,
       scanCron: settings.scheduling.scanCron,
       janitorCron: settings.scheduling.janitorCron,
+      hfSyncCron: settings.scheduling.hfSyncCron,
       callbackToken: settings.security.callbackToken
     }
     await settingsStore.update(payload)
@@ -613,6 +723,14 @@ input:checked + .slider:before { transform: translateX(18px); }
   padding-left: 2px;
 }
 
+.textarea-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: vertical;
+  line-height: 1.6;
+  padding: 8px 12px;
+}
+
 .save-btn {
   background: var(--color-blue);
   color: #FFFFFF;
@@ -666,12 +784,12 @@ input:checked + .slider:before { transform: translateX(18px); }
   background: var(--color-blue);
   color: #fff;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: var(--radius-input);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
@@ -687,8 +805,8 @@ input:checked + .slider:before { transform: translateX(18px); }
   pointer-events: none;
 }
 .fetch-icon {
-  font-size: 18px !important;
-  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  font-size: 16px !important;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }
 .spin {
   animation: spin 1s linear infinite;

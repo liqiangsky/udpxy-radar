@@ -6,7 +6,7 @@ import logging
 
 from typing import List
 
-from db.database import get_db, get_cache_db, get_setting
+from db.database import get_db, get_cache_db, get_iptv_db, get_setting
 from core.status import task_runner
 from services.github import search_github_sources
 from services.ozone import fetch_ozone_sources
@@ -129,6 +129,12 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         logger.info(f"📡 [hunter] 从 source_cache 读取, region='{region}', 匹配到 {len(hosts)} 个 host")
                         candidate_hosts.extend((h, ds, ds_name) for h in hosts)
                     elif ds == "github":
+                        # 先读 source_cache 预拉取数据
+                        region = config.get("templateRegion", "")
+                        cached_hosts = get_cached_hosts("github", region)
+                        logger.info(f"📡 [GitHub] 从 source_cache 读取, region='{region}', 匹配到 {len(cached_hosts)} 个 host")
+                        candidate_hosts.extend((h, "github", "GitHub") for h in cached_hosts)
+                        # 再走 GitHub Code Search 实时检索
                         hosts = await search_github_sources(
                             session,
                             config["templateTargetAddress"],
@@ -163,7 +169,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                                 #
                                 # 去重检查：如果 host 已在 iptv_list 中则跳过
                                 #
-                                with get_cache_db() as conn:
+                                with get_iptv_db() as conn:
                                     existing = conn.execute(
                                         "SELECT 1 FROM iptv_list WHERE host=?",
                                         (host_item,)
@@ -227,7 +233,7 @@ async def execute_scan_queue(config_ids: List[int], skip_disabled: bool = False)
                         # 入 iptv_list 活源池
                         _db_write_lock.acquire()
                         try:
-                            with get_cache_db() as conn:
+                            with get_iptv_db() as conn:
                                 for item in enriched:
                                     host_item = item["host"]
                                     if ":" in host_item:
@@ -352,56 +358,3 @@ def enqueue_background_queue(config_id: int):
     return True
 
 
-class ActiveSourceJanitor:
-
-    def __init__(self):
-        self._thread = None
-        self._running = False
-        self._stop_event = threading.Event()
-
-    def start(self):
-        if self._running:
-            return
-        self._running = True
-        self._stop_event.clear()
-        self._thread = threading.Thread(
-            target=self._loop,
-            daemon=True
-        )
-        self._thread.start()
-
-    def stop(self):
-        self._running = False
-        self._stop_event.set()
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=10)
-        self._thread = None
-
-    def _loop(self):
-        # HF 自动同步定时器（每分钟一次）
-        last_hf_sync = time.time()
-
-        while self._running:
-            try:
-                # HF 自动同步（每分钟一次）
-                now_t = time.time()
-                if now_t - last_hf_sync >= 60:
-                    last_hf_sync = now_t
-                    push_to_hf()
-
-                # 所有数据源 cron 任务已迁移到 /api/cron/heartbeat 端点，
-                # 由 Cloudflare Worker 每分钟触发一次。
-                # 这里只保留 HF 同步和基础心跳。
-
-            except Exception as e:
-                logger.error(f"❌ [复测异常] 老化器心跳内爆: {e}")
-
-            except Exception as e:
-                logger.error(f"❌ [复测异常] 老化器心跳内爆: {e}")
-
-            # 每分钟检查一次
-            self._stop_event.wait(timeout=30)
-
-
-# 🛠️ 全局唯一实例化对象，供 main.py 正常引入
-janitor = ActiveSourceJanitor()

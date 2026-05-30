@@ -5,11 +5,13 @@ CF Worker 每分钟 ping 此接口，HF 内部检查当前时间是否匹配任�
 """
 import datetime
 import asyncio
+import aiohttp
 import logging
-from db.database import get_db, get_cache_db, get_setting
+from db.database import get_db, get_cache_db, get_iptv_db, get_setting
 from core.engine import trigger_background_queue
 from core.status import task_runner
 from services.source_cache import cache_sources
+from services.hf_sync import push_to_hf
 
 logger = logging.getLogger("udpxy_radar")
 
@@ -90,7 +92,7 @@ async def handle_heartbeat() -> dict:
     if cron_match(janitor_cron, cron_now) and _should_exec("janitor", now):
         if task_runner.is_idle():
             logger.info(f"⏰ [心跳触发] 定时复测 -> cron: {janitor_cron}")
-            from db.database import get_cache_db
+            from db.database import get_iptv_db, get_cache_db
             import aiohttp
             timeout_sec = int(get_setting("timeout", "2000")) / 1000.0
             concurrency = int(get_setting("concurrency", "64"))
@@ -98,7 +100,7 @@ async def handle_heartbeat() -> dict:
 
             task_runner.set_rechecking()
             try:
-                with get_cache_db() as conn:
+                with get_iptv_db() as conn:
                     active_sources = conn.execute("SELECT * FROM iptv_list").fetchall()
 
                 logger.info(f"🧹 [心跳复测] 开始复测 {len(active_sources)} 个活源")
@@ -137,7 +139,7 @@ async def handle_heartbeat() -> dict:
                                         ) as r:
                                             if r.status in [200, 206] and await r.content.read(512):
                                                 delay = int((__import__("time").time() - start_t) * 1000)
-                                                with get_cache_db() as conn:
+                                                with get_iptv_db() as conn:
                                                     conn.execute(
                                                         "UPDATE iptv_list SET delay=?, updateTime=?, protocol=? WHERE id=?",
                                                         (delay, int(__import__("time").time() * 1000), proto, source["id"])
@@ -147,7 +149,7 @@ async def handle_heartbeat() -> dict:
                                         pass
 
                                     logger.warning(f"🗑️ [老化淘汰] {source['host']}")
-                                    with get_cache_db() as conn:
+                                    with get_iptv_db() as conn:
                                         conn.execute("DELETE FROM iptv_list WHERE id=?", (source["id"],))
                                         conn.execute("DELETE FROM source_cache WHERE host=?", (source["host"],))
 
@@ -199,5 +201,25 @@ async def handle_heartbeat() -> dict:
         if sources:
             cache_sources("hunter", sources)
         triggered.append({"task": "hunter_fetch"})
+
+    # GitHub UserResult 定时拉取
+    github_user_result_fetch_cron = get_setting("github_user_result_fetch_cron", "")
+    if cron_match(github_user_result_fetch_cron, cron_now) and _should_exec("github_fetch", now) and get_setting("github_enabled", "1") == "1":
+        logger.info(f"⏰ [心跳触发] GitHub 定时拉取 -> cron: {github_user_result_fetch_cron}")
+        from services.github import fetch_github_user_result_sources
+        timeout = int(get_setting("timeout", "2000")) / 1000.0
+        connector = aiohttp.TCPConnector(limit=128, ssl=False)
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout * 2), connector=connector) as s:
+            sources = await fetch_github_user_result_sources(session=s)
+        if sources:
+            cache_sources("github", sources)
+        triggered.append({"task": "github_fetch"})
+
+    # HF 数据同步 cron
+    hf_sync_cron = get_setting("hf_sync_cron", "")
+    if cron_match(hf_sync_cron, cron_now) and _should_exec("hf_sync", now):
+        logger.info(f"⏰ [心跳触发] HF 定时同步 -> cron: {hf_sync_cron}")
+        push_to_hf()
+        triggered.append({"task": "hf_sync"})
 
     return triggered
